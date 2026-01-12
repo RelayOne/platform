@@ -1,0 +1,100 @@
+{
+  "name": "@relay/platform",
+  "version": "1.0.0",
+  "description": "Shared TypeScript library for the Relay Platform (Verity, NoteMan, ShipCheck)",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./auth": {
+      "import": "./dist/auth/index.mjs",
+      "require": "./dist/auth/index.js",
+      "types": "./dist/auth/index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types/index.mjs",
+      "require": "./dist/types/index.js",
+      "types": "./dist/types/index.d.ts"
+    },
+    "./services": {
+      "import": "./dist/services/index.mjs",
+      "require": "./dist/services/index.js",
+      "types": "./dist/services/index.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/utils/index.mjs",
+      "require": "./dist/utils/index.js",
+      "types": "./dist/utils/index.d.ts"
+    },
+    "./integrations": {
+      "import": "./dist/integrations/index.mjs",
+      "require": "./dist/integrations/index.js",
+      "types": "./dist/integrations/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "relay",
+    "platform",
+    "verity",
+    "noteman",
+    "shipcheck",
+    "auth",
+    "jwt",
+    "typescript"
+  ],
+  "author": "Terragon Labs",
+  "license": "UNLICENSED",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RelayOne/platform.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "jose": "^5.4.0",
+    "ioredis": "^5.4.1",
+    "zod": "^3.23.8",
+    "nanoid": "^5.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsup": "^8.1.0",
+    "typescript": "^5.5.0",
+    "vitest": "^1.6.0",
+    "@vitest/coverage-v8": "^1.6.0",
+    "eslint": "^8.57.0",
+    "@typescript-eslint/eslint-plugin": "^7.13.0",
+    "@typescript-eslint/parser": "^7.13.0"
+  },
+  "peerDependencies": {
+    "mongodb": "^6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "mongodb": {
+      "optional": true
+    }
+  }
+}
