@@ -1,0 +1,94 @@
+{
+  "name": "@relay/integrations",
+  "version": "1.0.0",
+  "description": "Shared integration clients for GitHub, GitLab, Jira, Slack, Linear, Bitbucket, Teams, and Discord",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./github": {
+      "import": "./dist/github/index.js",
+      "types": "./dist/github/index.d.ts"
+    },
+    "./gitlab": {
+      "import": "./dist/gitlab/index.js",
+      "types": "./dist/gitlab/index.d.ts"
+    },
+    "./jira": {
+      "import": "./dist/jira/index.js",
+      "types": "./dist/jira/index.d.ts"
+    },
+    "./slack": {
+      "import": "./dist/slack/index.js",
+      "types": "./dist/slack/index.d.ts"
+    },
+    "./linear": {
+      "import": "./dist/linear/index.js",
+      "types": "./dist/linear/index.d.ts"
+    },
+    "./bitbucket": {
+      "import": "./dist/bitbucket/index.js",
+      "types": "./dist/bitbucket/index.d.ts"
+    },
+    "./teams": {
+      "import": "./dist/teams/index.js",
+      "types": "./dist/teams/index.d.ts"
+    },
+    "./discord": {
+      "import": "./dist/discord/index.js",
+      "types": "./dist/discord/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "test": "jest"
+  },
+  "keywords": [
+    "integrations",
+    "github",
+    "gitlab",
+    "jira",
+    "slack",
+    "linear",
+    "bitbucket",
+    "teams",
+    "discord",
+    "webhooks"
+  ],
+  "author": "Relay Platform",
+  "license": "MIT",
+  "dependencies": {
+    "@octokit/rest": "^20.0.2",
+    "@octokit/webhooks": "^12.0.10",
+    "@octokit/auth-app": "^6.0.3",
+    "@slack/web-api": "^7.0.2",
+    "@slack/bolt": "^3.17.1",
+    "@linear/sdk": "^19.0.0",
+    "axios": "^1.6.7",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "@types/jsonwebtoken": "^9.0.5",
+    "typescript": "^5.3.3",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.11"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "@relay/logger": "^1.0.0"
+  }
+}
