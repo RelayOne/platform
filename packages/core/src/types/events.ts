@@ -3,7 +3,7 @@
  * @module @relay/platform/types/events
  */
 
-import type { RelayApp } from './rbac';
+import { RelayApp } from './rbac';
 
 /**
  * Base event structure

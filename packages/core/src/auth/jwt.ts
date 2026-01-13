@@ -274,8 +274,9 @@ export class JwtError extends Error {
  * Create a JWT service with environment configuration
  */
 export function createJwtService(config?: Partial<JwtConfig>): JwtService {
+  const envSecret = process.env['JWT_SECRET'];
   return new JwtService({
-    secret: process.env['JWT_SECRET'],
+    ...(envSecret ? { secret: envSecret } : {}),
     ...config,
   });
 }

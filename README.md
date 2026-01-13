@@ -1,242 +1,163 @@
 # @relay/platform
 
-Shared TypeScript library for the Relay Platform (Verity, NoteMan, ShipCheck).
+Monorepo containing shared packages for the Relay Platform ecosystem (Verity, NoteMan, ShipCheck, nexus, AgentForce).
+
+## Packages
+
+| Package | Description | Version |
+|---------|-------------|---------|
+| [`@relay/core`](./packages/core) | Core types, services, utilities, deep-linking | 1.0.0 |
+| [`@relay/auth-middleware`](./packages/auth-middleware) | JWT, session, Hono auth middleware | 1.0.0 |
+| [`@relay/errors`](./packages/errors) | Shared error classes with Hono middleware | 1.0.0 |
+| [`@relay/logger`](./packages/logger) | Structured logging with audit support | 1.0.0 |
+| [`@relay/build-config`](./packages/build-config) | Shared tsup/vitest configurations | 1.0.0 |
 
 ## Installation
 
 ```bash
-npm install @relay/platform
-# or
-pnpm add @relay/platform
+# Install individual packages
+pnpm add @relay/auth-middleware @relay/errors @relay/logger
+
+# Or install the core package for types and utilities
+pnpm add @relay/core
 ```
 
-## Features
+## Quick Start
 
-- **Authentication**: JWT token generation/validation, session management
-- **Types**: Shared types for users, organizations, RBAC, events
-- **Services**: Cross-app deep linking, session synchronization
-- **Utilities**: Cryptographic functions, validation schemas, error classes
-- **Integrations**: OAuth helpers, webhook verification
-
-## Usage
-
-### JWT Authentication
+### Authentication Middleware (Hono)
 
 ```typescript
-import { JwtService, createJwtService } from '@relay/platform';
+import { Hono } from 'hono';
+import { createAuthMiddleware, JwtService } from '@relay/auth-middleware';
 
-// Create service with config
-const jwt = new JwtService({
-  secret: process.env.JWT_SECRET,
-  issuer: 'relay-platform',
-  audience: ['verity', 'noteman', 'shipcheck'],
+const app = new Hono();
+
+const jwtService = new JwtService({
+  secret: process.env.JWT_SECRET!,
+  accessTokenExpiry: '15m',
+  refreshTokenExpiry: '7d',
 });
 
-// Generate tokens
-const { accessToken, refreshToken, expiresAt } = await jwt.generateTokenPair({
-  sub: userId,
-  email: user.email,
-  name: user.name,
-  session_id: sessionId,
+// Protected routes
+app.use('/api/*', createAuthMiddleware({ jwtService }));
+
+app.get('/api/profile', (c) => {
+  const user = c.get('user');
+  return c.json({ user });
 });
-
-// Verify token
-const claims = await jwt.verifyToken(accessToken);
-console.log(claims.sub, claims.email);
-```
-
-### Cross-App Deep Linking
-
-```typescript
-import { DeepLinkingService, RelayApp } from '@relay/platform';
-
-const deepLinks = new DeepLinkingService({
-  signingKey: process.env.DEEP_LINK_SIGNING_KEY,
-});
-
-// Generate a deep link to a specific resource
-const link = deepLinks.generateNavigationUrl(
-  'SHIPCHECK' as RelayApp,
-  'repo',
-  'repo-123',
-  {
-    sessionId: currentSession.id,
-    userId: user.id,
-    context: { organizationId: org.id },
-  }
-);
-
-console.log(link.url); // https://app.shipcheck.dev/repos/repo-123?_rl_id=...
-
-// Resolve an incoming deep link
-const resolved = deepLinks.resolveLink(incomingUrl);
-if (resolved.valid) {
-  console.log(resolved.targetApp, resolved.path, resolved.sessionId);
-}
-```
-
-### Session Synchronization
-
-```typescript
-import { SessionSyncService, AuthEventType, RelayApp } from '@relay/platform';
-import Redis from 'ioredis';
-
-const redis = new Redis(process.env.REDIS_URL);
-const subscriber = redis.duplicate();
-
-const sessionSync = new SessionSyncService({
-  redis,
-  redisSubscriber: subscriber,
-  currentApp: 'NOTEMAN' as RelayApp,
-  handlers: {
-    [AuthEventType.PLATFORM_LOGOUT]: async (event) => {
-      // Invalidate local session when user logs out from another app
-      await invalidateSession(event.payload.sessionId);
-    },
-    [AuthEventType.SECURITY_INVALIDATION]: async (event) => {
-      // Force logout on security events
-      for (const sessionId of event.payload.affectedSessions) {
-        await invalidateSession(sessionId);
-      }
-    },
-  },
-});
-
-// Start listening for events
-await sessionSync.startListening();
-
-// Publish events when user logs in/out
-await sessionSync.publishLogin({
-  sessionId,
-  userId,
-  email: user.email,
-  organizationId: org.id,
-  apps: ['NOTEMAN'],
-  loginMethod: 'sso',
-  mfaUsed: false,
-});
-```
-
-### Types and RBAC
-
-```typescript
-import {
-  User,
-  Organization,
-  RelayApp,
-  ResourceType,
-  Action,
-  hasPermission,
-  type PermissionSet,
-} from '@relay/platform';
-
-// Check permissions
-const permissions: PermissionSet = {
-  allow: ['meeting:read', 'meeting:create', 'transcript:read'],
-  deny: [],
-};
-
-if (hasPermission(permissions, ResourceType.MEETING, Action.CREATE)) {
-  // User can create meetings
-}
-```
-
-### Validation
-
-```typescript
-import { emailSchema, passwordSchema, validate, ValidationError } from '@relay/platform';
-
-try {
-  const email = validate(emailSchema, userInput.email);
-  const password = validate(passwordSchema, userInput.password);
-} catch (error) {
-  if (error instanceof ValidationError) {
-    console.log(error.fieldErrors);
-  }
-}
 ```
 
 ### Error Handling
 
 ```typescript
 import {
-  AuthenticationError,
-  AuthorizationError,
   NotFoundError,
   ValidationError,
-  isRelayError,
-} from '@relay/platform';
+  createErrorMiddleware
+} from '@relay/errors';
+
+// Use error middleware
+app.onError(createErrorMiddleware());
 
 // Throw typed errors
-if (!user) {
-  throw new NotFoundError('User');
-}
-
-if (!hasAccess) {
-  throw new AuthorizationError('You do not have access to this resource');
-}
-
-// Handle errors
-try {
-  await someOperation();
-} catch (error) {
-  if (isRelayError(error)) {
-    return Response.json(error.toJSON(), { status: error.statusCode });
+app.get('/api/users/:id', async (c) => {
+  const user = await findUser(c.req.param('id'));
+  if (!user) {
+    throw new NotFoundError('User not found');
   }
-  throw error;
-}
+  return c.json(user);
+});
 ```
 
-## Module Exports
-
-The package provides both a main export and subpath exports:
+### Structured Logging
 
 ```typescript
-// Main export (everything)
-import { JwtService, RelayApp, DeepLinkingService } from '@relay/platform';
+import { createLogger, createAuditLogger } from '@relay/logger';
 
-// Subpath exports (tree-shakeable)
-import { JwtService, PlatformClaims } from '@relay/platform/auth';
-import { User, Organization } from '@relay/platform/types';
-import { DeepLinkingService } from '@relay/platform/services';
-import { sha256, aesEncrypt } from '@relay/platform/utils';
-import { IntegrationProvider } from '@relay/platform/integrations';
+const logger = createLogger({
+  service: 'my-api',
+  level: 'info'
+});
+
+const auditLogger = createAuditLogger({ service: 'my-api' });
+
+// Log with context
+logger.info('Request processed', {
+  userId: '123',
+  action: 'create'
+});
+
+// Audit security events
+auditLogger.userLogin({
+  success: true,
+  actorEmail: 'user@example.com',
+  actorIp: '192.168.1.1'
+});
 ```
 
-## Environment Variables
+### Core Types and Services
 
-```env
-# JWT Configuration
-JWT_SECRET=your-secret-key-here
+```typescript
+import {
+  JwtService,
+  DeepLinkingService,
+  type User,
+  type Organization,
+  UserRole,
+  PlanTier
+} from '@relay/core';
 
-# Deep Linking
-DEEP_LINK_SIGNING_KEY=your-signing-key-here
-
-# App URLs (optional, has defaults)
-VERITY_URL=https://app.verity.dev
-NOTEMAN_URL=https://app.noteman.dev
-SHIPCHECK_URL=https://app.shipcheck.dev
+// Deep linking between apps
+const deepLinks = new DeepLinkingService();
+const link = deepLinks.generateNavigationUrl('SHIPCHECK', 'repo', repoId);
 ```
 
 ## Development
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
-# Build
-npm run build
+# Build all packages
+pnpm build
 
 # Run tests
-npm test
+pnpm test
 
 # Type check
-npm run typecheck
+pnpm typecheck
 
 # Lint
-npm run lint
+pnpm lint
 ```
+
+## Package Dependencies
+
+```
+@relay/auth-middleware
+  └── @relay/errors
+
+@relay/core
+  └── (standalone)
+
+@relay/logger
+  └── (standalone)
+
+@relay/errors
+  └── (standalone)
+
+@relay/build-config
+  └── (standalone)
+```
+
+## Apps Using These Packages
+
+- **Verity** - AI content audit platform
+- **NoteMan** - Meeting notes and AI transcription
+- **ShipCheck** - Code analysis and quality checks
+- **nexus** - CRM and sales intelligence
+- **AgentForce** - AI coding agents platform
 
 ## License
 
-UNLICENSED - Proprietary to Terragon Labs
+MIT © Terragon Labs

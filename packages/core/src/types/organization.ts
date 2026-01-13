@@ -3,6 +3,7 @@
  * @module @relay/platform/types/organization
  */
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { UserRole } from './user';
 
 /**
@@ -389,7 +390,7 @@ export function hasQuotaRemaining(
 ): boolean {
   const quota = quotaType.startsWith('apps.')
     ? (org.quotas.apps as Record<string, number | undefined>)[quotaType.slice(5)]
-    : (org.quotas as Record<string, unknown>)[quotaType];
+    : (org.quotas as unknown as Record<string, unknown>)[quotaType];
 
   if (quota === -1 || quota === undefined) {
     return true; // Unlimited or not tracked
@@ -397,7 +398,7 @@ export function hasQuotaRemaining(
 
   const usage = quotaType.startsWith('apps.')
     ? (org.usage.apps as Record<string, number | undefined>)[quotaType.slice(5)]
-    : (org.usage as Record<string, unknown>)[quotaType];
+    : (org.usage as unknown as Record<string, unknown>)[quotaType];
 
   return (usage as number) < (quota as number);
 }

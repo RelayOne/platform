@@ -1,0 +1,54 @@
+{
+  "name": "@relay/logger",
+  "version": "1.0.0",
+  "description": "Shared logging utilities for the Relay Platform",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.7",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.0",
+    "vitest": "^4.0.16"
+  },
+  "peerDependencies": {
+    "hono": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "hono": {
+      "optional": true
+    }
+  },
+  "keywords": [
+    "relay",
+    "platform",
+    "logging",
+    "logger"
+  ],
+  "author": "Terragon Labs",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RelayOne/platform.git",
+    "directory": "packages/logger"
+  }
+}
