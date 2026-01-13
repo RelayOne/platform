@@ -1,0 +1,54 @@
+{
+  "name": "@relay/mongodb",
+  "version": "1.0.0",
+  "description": "Shared MongoDB utilities for the Relay Platform",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "mongodb": "^6.3.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.4"
+  },
+  "peerDependencies": {
+    "mongodb": "^6.0.0"
+  },
+  "keywords": [
+    "relay",
+    "platform",
+    "mongodb",
+    "database",
+    "repository"
+  ],
+  "author": "RelayOne",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RelayOne/platform.git",
+    "directory": "packages/mongodb"
+  }
+}
