@@ -12,7 +12,7 @@ pnpm add @relay/integrations
 
 - **Git Providers**: GitHub, GitLab, Bitbucket
 - **Issue Trackers**: Jira, Linear
-- **Chat Platforms**: Slack (Discord and Teams planned)
+- **Chat Platforms**: Slack, Discord, Microsoft Teams
 - **Common Interfaces**: Unified types for cross-platform compatibility
 - **Webhook Handling**: Signature verification and payload parsing
 - **Error Handling**: Typed errors with retry support
@@ -186,6 +186,102 @@ await slack.postEphemeral('#general', 'U12345', 'Only you can see this');
 const isValid = verifySlackSignature(timestamp, body, signature, signingSecret);
 ```
 
+### Discord
+
+```typescript
+import { DiscordClient, verifyDiscordWebhook, discord } from '@relay/integrations';
+
+const discordClient = new DiscordClient({
+  botToken: process.env.DISCORD_BOT_TOKEN,
+  applicationId: process.env.DISCORD_APPLICATION_ID,
+  publicKey: process.env.DISCORD_PUBLIC_KEY,
+});
+
+// Send message to channel
+await discordClient.sendChannelMessage('channel-id', {
+  content: 'Hello from ShipCheck!',
+  embeds: [{
+    title: 'Analysis Complete',
+    description: 'Found 3 issues in the pull request.',
+    color: 0x00ff00,
+  }],
+});
+
+// Send DM
+await discordClient.sendDirectMessage('user-id', {
+  content: 'Your analysis is ready!',
+});
+
+// Verify webhook (Ed25519 signature)
+const result = verifyDiscordWebhook(
+  req.body,
+  req.headers['x-signature-ed25519'],
+  req.headers['x-signature-timestamp'],
+  process.env.DISCORD_PUBLIC_KEY
+);
+
+// Handle interactions
+if (discord.isPing(interaction)) {
+  return discord.createPongResponse();
+}
+
+if (discord.isCommand(interaction)) {
+  const commandName = discord.getCommandName(interaction);
+  return discord.createMessageResponse({ content: `Received command: ${commandName}` });
+}
+```
+
+### Microsoft Teams
+
+```typescript
+import { TeamsClient, verifyTeamsWebhook, teams } from '@relay/integrations';
+
+const teamsClient = new TeamsClient({
+  appId: process.env.TEAMS_APP_ID,
+  appPassword: process.env.TEAMS_APP_PASSWORD,
+});
+
+// Send message to conversation
+await teamsClient.sendToConversation(serviceUrl, conversationId, {
+  type: 'message',
+  text: 'Hello from ShipCheck!',
+});
+
+// Send Adaptive Card
+const card = teamsClient.createAdaptiveCardAttachment({
+  type: 'AdaptiveCard',
+  version: '1.4',
+  body: [
+    { type: 'TextBlock', text: 'Analysis Complete', weight: 'bolder', size: 'large' },
+    { type: 'TextBlock', text: 'Found 3 issues in the pull request.' },
+  ],
+  actions: [
+    { type: 'Action.OpenUrl', title: 'View Report', url: 'https://shipcheck.io/reports/123' },
+  ],
+});
+
+await teamsClient.sendToConversation(serviceUrl, conversationId, {
+  type: 'message',
+  attachments: [card],
+});
+
+// Verify Bot Framework JWT token
+const result = verifyTeamsWebhook(
+  req.headers['authorization'],
+  process.env.TEAMS_APP_ID
+);
+
+// Handle activities
+if (teams.isMessage(activity)) {
+  const text = teams.getMessageText(activity);
+  const isBotMentioned = teams.isBotMentioned(activity, botId);
+}
+
+if (teams.isConversationUpdate(activity) && teams.hasMembersAdded(activity)) {
+  // Send welcome message
+}
+```
+
 ## Common Interfaces
 
 The package provides common interfaces for cross-platform compatibility:
@@ -256,6 +352,8 @@ import {
   verifyBitbucketWebhook,
   verifyLinearWebhook,
   verifySlackSignature,
+  verifyDiscordWebhook,
+  verifyTeamsWebhook,
 } from '@relay/integrations';
 
 // In your webhook handler
@@ -301,6 +399,15 @@ LINEAR_WEBHOOK_SECRET=your-webhook-secret
 # Slack
 SLACK_BOT_TOKEN=xoxb-xxx
 SLACK_SIGNING_SECRET=your-signing-secret
+
+# Discord
+DISCORD_BOT_TOKEN=your-bot-token
+DISCORD_APPLICATION_ID=your-application-id
+DISCORD_PUBLIC_KEY=your-public-key
+
+# Microsoft Teams
+TEAMS_APP_ID=your-app-id
+TEAMS_APP_PASSWORD=your-app-password
 ```
 
 ## License

@@ -1,6 +1,6 @@
 /**
  * @fileoverview Shared integrations package for Relay platform
- * Provides unified clients for GitHub, GitLab, Jira, Slack, Linear, Bitbucket, Teams, and Discord
+ * Provides unified clients for GitHub, GitLab, Jira, Slack, Linear, Bitbucket, Discord, and Microsoft Teams
  * @module @relay/integrations
  */
 
@@ -39,6 +39,16 @@ export { verifyWebhookSignature as verifyJiraWebhook } from './jira/webhooks';
 export * as bitbucket from './bitbucket';
 export { BitbucketClient } from './bitbucket/client';
 export { verifyWebhook as verifyBitbucketWebhook } from './bitbucket/webhooks';
+
+// Discord integration
+export * as discord from './discord';
+export { DiscordClient } from './discord/client';
+export { verifyWebhookSignature as verifyDiscordWebhook } from './discord/webhooks';
+
+// Microsoft Teams integration
+export * as teams from './teams';
+export { TeamsClient } from './teams/client';
+export { verifyBotFrameworkToken as verifyTeamsWebhook } from './teams/webhooks';
 
 // Re-export common types for convenience
 export type {
