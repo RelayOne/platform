@@ -4,12 +4,33 @@ Monorepo containing shared packages for the Relay Platform ecosystem (Verity, No
 
 ## Packages
 
+### Core Infrastructure
 | Package | Description | Version |
 |---------|-------------|---------|
 | [`@relay/core`](./packages/core) | Core types, services, utilities, deep-linking | 1.0.0 |
 | [`@relay/auth-middleware`](./packages/auth-middleware) | JWT, session, Hono auth middleware | 1.0.0 |
 | [`@relay/errors`](./packages/errors) | Shared error classes with Hono middleware | 1.0.0 |
 | [`@relay/logger`](./packages/logger) | Structured logging with audit support | 1.0.0 |
+| [`@relay/telemetry`](./packages/telemetry) | OpenTelemetry, metrics, Sentry integration | 1.0.0 |
+
+### Database & Caching
+| Package | Description | Version |
+|---------|-------------|---------|
+| [`@relay/mongodb`](./packages/mongodb) | MongoDB connection, repositories, pagination | 1.0.0 |
+| [`@relay/redis`](./packages/redis) | Redis caching, pub/sub, sessions, rate limiting | 1.0.0 |
+| [`@relay/cache`](./packages/cache) | Unified Redis + LRU memory caching layer | 1.0.0 |
+
+### Security & Validation
+| Package | Description | Version |
+|---------|-------------|---------|
+| [`@relay/crypto`](./packages/crypto) | Cryptography: tokens, hashing, encryption, HMAC | 1.0.0 |
+| [`@relay/validation`](./packages/validation) | Zod schemas, validators, pagination helpers | 1.0.0 |
+
+### Utilities
+| Package | Description | Version |
+|---------|-------------|---------|
+| [`@relay/utils`](./packages/utils) | Formatting, ID generation, debounce, array utils | 1.0.0 |
+| [`@relay/circuit-breaker`](./packages/circuit-breaker) | Fault tolerance, retries, circuit breaker pattern | 1.0.0 |
 | [`@relay/build-config`](./packages/build-config) | Shared tsup/vitest configurations | 1.0.0 |
 
 ## Installation
@@ -138,16 +159,40 @@ pnpm lint
   └── @relay/errors
 
 @relay/core
+  └── (standalone - JWT, deep-linking, types)
+
+@relay/cache
+  └── ioredis (optional - falls back to memory)
+
+@relay/circuit-breaker
+  └── (standalone)
+
+@relay/crypto
+  └── (standalone - uses Node crypto)
+
+@relay/errors
   └── (standalone)
 
 @relay/logger
   └── (standalone)
 
-@relay/errors
-  └── (standalone)
+@relay/mongodb
+  └── mongodb driver
+
+@relay/redis
+  └── ioredis
+
+@relay/telemetry
+  └── OpenTelemetry SDK, Sentry, Pino
+
+@relay/utils
+  └── clsx, tailwind-merge, nanoid
+
+@relay/validation
+  └── zod
 
 @relay/build-config
-  └── (standalone)
+  └── tsup, vitest
 ```
 
 ## Apps Using These Packages
