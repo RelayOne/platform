@@ -80,7 +80,19 @@ export type IntegrationSource =
   | 'linear'
   | 'slack'
   | 'teams'
-  | 'discord';
+  | 'discord'
+  | 'asana'
+  | 'clickup'
+  | 'monday'
+  | 'notion'
+  | 'trello'
+  | 'wrike'
+  | 'salesforce'
+  | 'hubspot'
+  | 'pipedrive'
+  | 'google-drive'
+  | 'onedrive'
+  | 'dropbox';
 
 /**
  * Webhook verification result

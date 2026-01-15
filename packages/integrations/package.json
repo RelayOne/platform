@@ -1,7 +1,7 @@
 {
   "name": "@relay/integrations",
-  "version": "1.0.0",
-  "description": "Shared integration clients for GitHub, GitLab, Jira, Slack, Linear, Bitbucket, Teams, and Discord",
+  "version": "1.1.0",
+  "description": "Shared integration clients for GitHub, GitLab, Jira, Slack, Linear, Bitbucket, Teams, Discord, Asana, ClickUp, Monday, Notion, Trello, Wrike, Salesforce, HubSpot, Pipedrive, Google Drive, and OneDrive",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -41,6 +41,54 @@
     "./discord": {
       "import": "./dist/discord/index.js",
       "types": "./dist/discord/index.d.ts"
+    },
+    "./asana": {
+      "import": "./dist/asana/index.js",
+      "types": "./dist/asana/index.d.ts"
+    },
+    "./clickup": {
+      "import": "./dist/clickup/index.js",
+      "types": "./dist/clickup/index.d.ts"
+    },
+    "./monday": {
+      "import": "./dist/monday/index.js",
+      "types": "./dist/monday/index.d.ts"
+    },
+    "./notion": {
+      "import": "./dist/notion/index.js",
+      "types": "./dist/notion/index.d.ts"
+    },
+    "./trello": {
+      "import": "./dist/trello/index.js",
+      "types": "./dist/trello/index.d.ts"
+    },
+    "./wrike": {
+      "import": "./dist/wrike/index.js",
+      "types": "./dist/wrike/index.d.ts"
+    },
+    "./tracker-base": {
+      "import": "./dist/tracker-base/index.js",
+      "types": "./dist/tracker-base/index.d.ts"
+    },
+    "./salesforce": {
+      "import": "./dist/salesforce/index.js",
+      "types": "./dist/salesforce/index.d.ts"
+    },
+    "./hubspot": {
+      "import": "./dist/hubspot/index.js",
+      "types": "./dist/hubspot/index.d.ts"
+    },
+    "./pipedrive": {
+      "import": "./dist/pipedrive/index.js",
+      "types": "./dist/pipedrive/index.d.ts"
+    },
+    "./google-drive": {
+      "import": "./dist/google-drive/index.js",
+      "types": "./dist/google-drive/index.d.ts"
+    },
+    "./onedrive": {
+      "import": "./dist/onedrive/index.js",
+      "types": "./dist/onedrive/index.d.ts"
     }
   },
   "scripts": {
@@ -48,7 +96,7 @@
     "dev": "tsc --watch",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
-    "test": "jest"
+    "test": "vitest run"
   },
   "keywords": [
     "integrations",
@@ -60,7 +108,21 @@
     "bitbucket",
     "teams",
     "discord",
-    "webhooks"
+    "asana",
+    "clickup",
+    "monday",
+    "notion",
+    "trello",
+    "wrike",
+    "salesforce",
+    "hubspot",
+    "pipedrive",
+    "google-drive",
+    "onedrive",
+    "crm",
+    "cloud-storage",
+    "webhooks",
+    "project-management"
   ],
   "author": "Relay Platform",
   "license": "MIT",
@@ -82,13 +144,13 @@
     "eslint": "^8.56.0",
     "@typescript-eslint/eslint-plugin": "^6.20.0",
     "@typescript-eslint/parser": "^6.20.0",
-    "jest": "^29.7.0",
-    "@types/jest": "^29.5.11"
+    "vitest": "^1.2.2"
   },
   "engines": {
     "node": ">=18.0.0"
   },
-  "peerDependencies": {
-    "@relay/logger": "^1.0.0"
+  "peerDependencies": {},
+  "optionalDependencies": {
+    "@relay/logger": "workspace:*"
   }
 }
