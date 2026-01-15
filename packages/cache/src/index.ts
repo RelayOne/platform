@@ -125,9 +125,14 @@ export class UnifiedCache {
   private stats = { hits: 0, misses: 0 };
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-  private readonly config: Required<
-    Omit<CacheConfig, 'redis'> & { redis?: CacheConfig['redis'] }
-  >;
+  private readonly config: {
+    keyPrefix: string;
+    defaultTTL: number;
+    maxMemoryEntries: number;
+    enableCleanup: boolean;
+    cleanupInterval: number;
+    redis: CacheConfig['redis'] | undefined;
+  };
 
   /**
    * Creates a new UnifiedCache instance.
@@ -141,7 +146,7 @@ export class UnifiedCache {
       maxMemoryEntries: config.maxMemoryEntries ?? 10000,
       enableCleanup: config.enableCleanup ?? true,
       cleanupInterval: config.cleanupInterval ?? 300000,
-      redis: config.redis,
+      redis: config.redis ?? undefined,
     };
 
     // Initialize Redis if configured
