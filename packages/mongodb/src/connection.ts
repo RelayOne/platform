@@ -164,6 +164,13 @@ export class MongoConnection {
   }
 
   /**
+   * Alias for disconnect() for backward compatibility.
+   */
+  public async close(): Promise<void> {
+    return this.disconnect();
+  }
+
+  /**
    * Gets the MongoDB database instance.
    * @returns The database instance or null if not connected
    */
@@ -185,6 +192,14 @@ export class MongoConnection {
    */
   public getState(): ConnectionState {
     return this.state;
+  }
+
+  /**
+   * Checks if the connection is currently established.
+   * @returns True if connected
+   */
+  public isConnected(): boolean {
+    return this.state === 'connected' && this.client !== null && this.db !== null;
   }
 
   /**

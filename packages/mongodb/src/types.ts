@@ -259,3 +259,8 @@ export type {
   ClientSession,
   TransactionOptions,
 };
+
+/**
+ * Alias for Document type for backward compatibility
+ */
+export type MongoDocument = Document;

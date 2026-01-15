@@ -69,6 +69,7 @@ export type {
   IndexDefinition,
   ConnectionState,
   ConnectionStateEvent,
+  MongoDocument,
   // Re-exported MongoDB types
   MongoClient,
   Db,

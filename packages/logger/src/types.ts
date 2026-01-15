@@ -124,6 +124,8 @@ export interface LoggerConfig {
   format: 'json' | 'pretty';
   /** Whether to include timestamps in pretty format */
   timestamps: boolean;
+  /** Environment (e.g., 'development', 'production') */
+  environment?: string;
   /** Default context to include in all log entries */
   defaultContext?: Record<string, unknown>;
   /** Custom output function (for testing or custom transports) */
