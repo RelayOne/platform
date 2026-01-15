@@ -1,16 +1,16 @@
 # @relay/logger
 
-Shared logging utilities for the Relay Platform.
+Shared logging utilities for Relay Platform applications.
 
 ## Features
 
-- **Structured Logging**: JSON and pretty-print output formats
-- **Log Levels**: debug, info, warn, error, fatal
-- **Request Correlation**: Request ID tracking across log entries
-- **HTTP Middleware**: Automatic request/response logging
-- **Audit Logging**: Security-focused event logging
-- **Timed Operations**: Built-in duration tracking
-- **Framework Support**: Works with Hono, Express, and others
+- **Structured logging** - JSON and pretty print formats
+- **Log levels** - DEBUG, INFO, WARN, ERROR, FATAL
+- **Context enrichment** - Add context to all log entries
+- **Child loggers** - Create loggers with inherited context
+- **Audit logging** - Security-relevant event logging
+- **Request logging** - HTTP request/response logging middleware
+- **TypeScript support** - Full type safety
 
 ## Installation
 
@@ -18,263 +18,250 @@ Shared logging utilities for the Relay Platform.
 pnpm add @relay/logger
 ```
 
-## Usage
-
-### Basic Logging
+## Quick Start
 
 ```typescript
-import { logger, createLogger, configureLogger } from '@relay/logger';
-
-// Configure global settings
-configureLogger({
-  level: 'debug',
-  service: 'my-service',
-  format: 'pretty', // or 'json' for production
-});
+import { logger, createLogger, LogLevel } from '@relay/logger';
 
 // Use default logger
 logger.info('Application started');
-logger.error('Something went wrong', { error: new Error('oops') });
+logger.error('Something went wrong', new Error('Oops'));
 
-// Create logger with context
-const authLogger = createLogger({ component: 'auth' });
-authLogger.info('User authenticated', { userId: '123' });
-```
-
-### Log Levels
-
-```typescript
-logger.debug('Detailed debugging info');
-logger.info('General information');
-logger.warn('Warning conditions');
-logger.error('Error conditions');
-logger.fatal('Critical errors');
-```
-
-### Request Correlation
-
-```typescript
-const reqLogger = createLogger();
-reqLogger.setRequestId('req-12345');
-reqLogger.setUserId('user-67890');
-reqLogger.setOrganizationId('org-11111');
-
-reqLogger.info('Processing request');
-// Output includes requestId, userId, organizationId
-```
-
-### Child Loggers
-
-```typescript
-const parentLogger = createLogger({ service: 'api' });
-const childLogger = parentLogger.child({ endpoint: '/users' });
-
-childLogger.info('Handling request');
-// Output: { service: 'api', endpoint: '/users', ... }
-```
-
-### Timed Operations
-
-```typescript
-const timer = logger.time('database-query', { table: 'users' });
-const result = await db.query('SELECT * FROM users');
-timer.end();
-// Output: "database-query completed (150ms)"
-```
-
-### HTTP Middleware (Hono)
-
-```typescript
-import { Hono } from 'hono';
-import { createRequestLogger, getLogger } from '@relay/logger';
-
-const app = new Hono();
-
-// Add request logging
-app.use('*', createRequestLogger({
-  skipPaths: ['/health', '/metrics'],
-  logDuration: true,
-}));
-
-// Access logger in routes
-app.get('/api/users', (c) => {
-  const log = getLogger(c);
-  log.info('Fetching users');
-  return c.json({ users: [] });
-});
-```
-
-### HTTP Middleware (Express)
-
-```typescript
-import express from 'express';
-import { createExpressLogger } from '@relay/logger';
-
-const app = express();
-app.use(createExpressLogger());
-```
-
-### Audit Logging
-
-```typescript
-import { auditLogger, createAuditLogger } from '@relay/logger';
-
-// User authentication
-auditLogger.userLogin({
-  success: true,
-  actorEmail: 'user@example.com',
-  actorIp: '192.168.1.1',
-  authMethod: 'password',
-  mfaUsed: true,
+// Create custom logger
+const customLogger = createLogger({
+  service: 'my-service',
+  level: LogLevel.DEBUG,
 });
 
-// Resource access
-auditLogger.resourceAccess({
-  action: 'read',
-  success: true,
-  actorId: 'user-123',
-  resourceType: 'document',
-  resourceId: 'doc-456',
-});
-
-// Organization member changes
-auditLogger.orgMember({
-  action: 'role_change',
-  success: true,
-  actorId: 'admin-123',
-  organizationId: 'org-456',
-  targetUserId: 'user-789',
-  oldRole: 'member',
-  newRole: 'admin',
-});
-
-// API key management
-auditLogger.apiKey({
-  action: 'create',
-  success: true,
-  actorId: 'user-123',
-  keyId: 'key-456',
-  keyName: 'Production API Key',
-});
-
-// Generic audit event
-auditLogger.log('custom.event', {
-  success: true,
-  actorId: 'user-123',
-  details: { customField: 'value' },
-});
+customLogger.debug('Debug message', { key: 'value' });
 ```
 
 ## Configuration
 
+### Global Configuration
+
 ```typescript
-import { configureLogger, configureAuditLogger } from '@relay/logger';
+import { configureLogger } from '@relay/logger';
 
 configureLogger({
-  // Minimum log level (default: 'info')
-  level: 'debug',
-
-  // Service name for identification
-  service: 'my-service',
-
-  // Output format: 'json' or 'pretty'
-  format: 'json',
-
-  // Include timestamps in pretty format
-  timestamps: true,
-
-  // Default context for all logs
-  defaultContext: {
-    environment: 'production',
-  },
-
-  // Custom output function
-  output: (entry) => {
-    // Send to custom transport
-  },
-});
-
-configureAuditLogger({
-  service: 'my-service',
-  echoToLogger: true, // Also log to standard logger
+  level: 'info',          // Minimum log level
+  service: 'my-app',      // Service name
+  format: 'json',         // 'json' or 'pretty'
+  environment: 'production',
 });
 ```
 
-## Log Entry Structure
+### Logger Options
 
 ```typescript
-interface LogEntry {
-  timestamp: string;      // ISO 8601 timestamp
-  level: LogLevel;        // debug | info | warn | error | fatal
-  message: string;        // Log message
-  service: string;        // Service name
-  requestId?: string;     // Request correlation ID
-  userId?: string;        // Authenticated user ID
-  organizationId?: string; // Organization ID
-  context?: object;       // Additional context
-  error?: {               // Error details
-    name: string;
-    message: string;
-    stack?: string;
-    code?: string;
-  };
-  durationMs?: number;    // Operation duration
-  http?: {                // HTTP request details
-    method: string;
-    path: string;
-    statusCode?: number;
-    userAgent?: string;
-    ip?: string;
-  };
+import { Logger, LogLevel, LoggerConfig } from '@relay/logger';
+
+const config: LoggerConfig = {
+  level: LogLevel.INFO,     // Minimum log level
+  service: 'my-service',    // Service name
+  json: true,               // Output as JSON
+  timestamps: true,         // Include timestamps
+  defaultContext: {         // Context for all logs
+    app: 'my-app',
+    version: '1.0.0',
+  },
+};
+
+const logger = new Logger(config);
+```
+
+## API Reference
+
+### Logger Methods
+
+```typescript
+import { logger } from '@relay/logger';
+
+// Debug (development logging)
+logger.debug('Debug message', { detail: 'info' });
+
+// Info (general operational)
+logger.info('User logged in', { userId: '123' });
+
+// Warning (potential issues)
+logger.warn('Rate limit approaching', { current: 90, max: 100 });
+
+// Error (errors that need attention)
+logger.error('Request failed', new Error('Network error'), { endpoint: '/api' });
+
+// Fatal (critical errors)
+logger.fatal('Database connection lost', new Error('Connection refused'));
+```
+
+### Child Loggers
+
+Create loggers with additional context:
+
+```typescript
+const requestLogger = logger.child({
+  requestId: 'req-123',
+  userId: 'user-456',
+});
+
+// All logs include requestId and userId
+requestLogger.info('Processing request');
+requestLogger.error('Request failed', error);
+```
+
+### Creating Loggers
+
+```typescript
+import { createLogger, Logger } from '@relay/logger';
+
+// With configuration
+const configuredLogger = createLogger({
+  service: 'api',
+  level: LogLevel.DEBUG,
+  json: false,
+});
+
+// With context (creates child logger)
+const contextLogger = createLogger({ component: 'auth' });
+
+// Direct instantiation
+const customLogger = new Logger({
+  service: 'custom',
+  defaultContext: { env: 'dev' },
+});
+```
+
+## Audit Logging
+
+For security-relevant events:
+
+```typescript
+import { auditLogger } from '@relay/logger';
+
+auditLogger.log({
+  eventType: 'user_login',
+  actorId: 'user-123',
+  actorEmail: 'user@example.com',
+  actorIp: '192.168.1.1',
+  organizationId: 'org-456',
+  projectId: 'proj-789',
+  resourceType: 'session',
+  resourceId: 'sess-001',
+  success: true,
+  metadata: {
+    userAgent: 'Mozilla/5.0...',
+    mfaUsed: true,
+  },
+});
+```
+
+## HTTP Middleware
+
+### Request Logging
+
+```typescript
+import { createRequestLogger } from '@relay/logger';
+
+const requestLogger = createRequestLogger();
+
+// Express/Hono middleware
+app.use(requestLogger);
+
+// Logs: "GET /api/users" with method, url, statusCode, duration
+```
+
+### Request ID Middleware
+
+```typescript
+import { createRequestIdMiddleware } from '@relay/logger';
+
+const requestIdMiddleware = createRequestIdMiddleware();
+
+// Express/Hono middleware
+app.use(requestIdMiddleware);
+
+// Sets X-Request-ID header, preserves existing or generates new
+```
+
+## Output Formats
+
+### JSON Format (Production)
+
+```json
+{
+  "level": "info",
+  "message": "User logged in",
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "service": "auth",
+  "context": {
+    "userId": "123",
+    "ip": "192.168.1.1"
+  }
 }
 ```
 
-## Audit Event Types
+### Pretty Format (Development)
 
-| Category | Events |
-|----------|--------|
-| User | `user.login`, `user.logout`, `user.register`, `user.password_change`, `user.mfa_enable`, `user.mfa_disable`, `user.profile_update` |
-| Organization | `org.create`, `org.update`, `org.delete`, `org.member_add`, `org.member_remove`, `org.member_role_change` |
-| Resource | `resource.create`, `resource.read`, `resource.update`, `resource.delete`, `resource.share` |
-| API | `api.key_create`, `api.key_revoke`, `api.rate_limit` |
-| Admin | `admin.user_suspend`, `admin.user_restore`, `admin.config_change` |
+```
+[2024-01-15T10:30:00.000Z] INFO  [auth] User logged in {"userId":"123","ip":"192.168.1.1"}
+```
+
+## Log Levels
+
+| Level | Priority | Use Case |
+|-------|----------|----------|
+| DEBUG | 0 | Detailed debugging information |
+| INFO | 1 | General operational messages |
+| WARN | 2 | Warning conditions, potential issues |
+| ERROR | 3 | Error conditions that need attention |
+| FATAL | 4 | Critical errors, system failures |
+
+## Type Definitions
+
+```typescript
+import {
+  LogLevel,
+  LogEntry,
+  LoggerConfig,
+  ILogger,
+  AuditEventType,
+  AuditLogEntry,
+} from '@relay/logger';
+
+// LogEntry structure
+interface LogEntry {
+  level: LogLevel;
+  message: string;
+  timestamp: string;
+  context?: Record<string, unknown>;
+  error?: Error;
+  service?: string;
+  traceId?: string;
+  spanId?: string;
+}
+```
 
 ## Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `LOG_LEVEL` | Minimum log level | `info` |
-| `SERVICE_NAME` | Service identifier | `relay-service` |
-| `NODE_ENV` | Environment (affects format) | `development` |
+| `LOG_LEVEL` | Minimum log level | `info` (prod), `debug` (dev) |
+| `SERVICE_NAME` | Service name for logs | `relay` |
+| `NODE_ENV` | Environment detection | `development` |
 
-## API Reference
+## Best Practices
 
-### Logger
+1. **Use appropriate log levels** - DEBUG for development, INFO+ for production
+2. **Include context** - Add relevant data like IDs, durations, counts
+3. **Use child loggers** - Create request-scoped loggers with context
+4. **Audit security events** - Log authentication, authorization, data access
+5. **Don't log sensitive data** - Never log passwords, tokens, PII
+6. **Use structured logging** - JSON format for log aggregation systems
 
-| Method | Description |
-|--------|-------------|
-| `debug(message, data?)` | Log debug message |
-| `info(message, data?)` | Log info message |
-| `warn(message, data?)` | Log warning message |
-| `error(message, data?)` | Log error message |
-| `fatal(message, data?)` | Log fatal message |
-| `child(context)` | Create child logger with merged context |
-| `setRequestId(id)` | Set request correlation ID |
-| `setUserId(id)` | Set authenticated user ID |
-| `setOrganizationId(id)` | Set organization ID |
-| `time(operation, data?)` | Start timed operation |
+## Testing
 
-### Functions
-
-| Function | Description |
-|----------|-------------|
-| `configureLogger(config)` | Configure global settings |
-| `getLoggerConfig()` | Get current configuration |
-| `createLogger(context?)` | Create new logger instance |
-| `createRequestLogger(config?)` | Create Hono request middleware |
-| `createExpressLogger(config?)` | Create Express request middleware |
-| `createRequestIdMiddleware(header?)` | Create request ID middleware |
-| `getLogger(context)` | Get logger from request context |
+```bash
+pnpm test
+```
 
 ## License
 
