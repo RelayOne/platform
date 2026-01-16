@@ -1,0 +1,46 @@
+{
+  "name": "@relay/webhooks",
+  "version": "1.0.0",
+  "description": "Webhook delivery system with retry logic and signature verification",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "nanoid": "^5.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.7",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.0"
+  },
+  "keywords": [
+    "relay",
+    "platform",
+    "webhooks",
+    "webhook-delivery",
+    "hmac"
+  ],
+  "author": "Terragon Labs",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RelayOne/platform.git",
+    "directory": "packages/relay-webhooks"
+  }
+}
