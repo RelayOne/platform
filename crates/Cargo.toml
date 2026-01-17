@@ -1,0 +1,67 @@
+# Platform Rust Crates
+#
+# Shared Rust crates for the Relay Platform ecosystem (Verity, ShipCheck, etc.)
+# These provide authentication, RBAC, organization management, events, and MCP functionality.
+#
+# Usage (from consuming crates):
+#   platform-auth = { git = "https://github.com/RelayOne/platform", branch = "main" }
+#   platform-rbac = { git = "https://github.com/RelayOne/platform", branch = "main" }
+#   platform-org = { git = "https://github.com/RelayOne/platform", branch = "main" }
+#   platform-events = { git = "https://github.com/RelayOne/platform", branch = "main" }
+#   platform-mcp = { git = "https://github.com/RelayOne/platform", branch = "main" }
+
+[workspace]
+resolver = "2"
+members = [
+    "platform-org",
+    "platform-rbac",
+    "platform-auth",
+    "platform-events",
+    "platform-mcp",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/RelayOne/platform"
+authors = ["Terragon Labs <team@terragonlabs.com>"]
+
+[workspace.dependencies]
+# Core dependencies shared across platform crates
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.6", features = ["v7", "serde"] }
+thiserror = "1.0"
+async-trait = "0.1"
+
+# Crypto
+sha2 = "0.10"
+base64 = "0.21"
+rand = "0.8"
+
+# JWT
+jsonwebtoken = "9"
+
+# OAuth/OIDC
+oauth2 = "4.4"
+openidconnect = "3.4"
+
+# SAML
+samael = "0.0.15"
+
+# Testing
+tokio = { version = "1", features = ["full", "test-util"] }
+
+# Workspace crates
+platform-org = { path = "platform-org" }
+platform-rbac = { path = "platform-rbac" }
+platform-auth = { path = "platform-auth" }
+platform-events = { path = "platform-events" }
+platform-mcp = { path = "platform-mcp" }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

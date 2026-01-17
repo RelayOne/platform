@@ -2,7 +2,43 @@
 
 Monorepo containing shared packages for the Relay Platform ecosystem (Verity, NoteMan, ShipCheck, nexus, AgentForce).
 
-## Packages
+This repository contains both **TypeScript packages** (`packages/`) and **Rust crates** (`crates/`).
+
+## Rust Crates
+
+Shared Rust crates for backend services. Used by Verity, ShipCheck, and other Rust-based services.
+
+| Crate | Description | Version |
+|-------|-------------|---------|
+| [`platform-auth`](./crates/platform-auth) | JWT, OAuth, OIDC, SAML authentication | 0.1.0 |
+| [`platform-rbac`](./crates/platform-rbac) | Role-based access control | 0.1.0 |
+| [`platform-org`](./crates/platform-org) | Multi-tenant organization management | 0.1.0 |
+| [`platform-events`](./crates/platform-events) | Cross-app event bus (memory, Redis, NATS) | 0.1.0 |
+| [`platform-mcp`](./crates/platform-mcp) | Model Context Protocol server | 0.1.0 |
+
+### Rust Usage
+
+Add to your `Cargo.toml`:
+
+```toml
+[dependencies]
+platform-auth = { git = "https://github.com/RelayOne/platform", branch = "main" }
+platform-rbac = { git = "https://github.com/RelayOne/platform", branch = "main" }
+platform-org = { git = "https://github.com/RelayOne/platform", branch = "main" }
+platform-events = { git = "https://github.com/RelayOne/platform", branch = "main" }
+platform-mcp = { git = "https://github.com/RelayOne/platform", branch = "main" }
+```
+
+### Rust Development
+
+```bash
+cd crates
+cargo build
+cargo test
+cargo clippy
+```
+
+## TypeScript Packages
 
 ### Core Infrastructure
 | Package | Description | Version |

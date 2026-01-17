@@ -1,0 +1,34 @@
+[package]
+name = "platform-mcp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Unified MCP (Model Context Protocol) server for the Relay platform"
+keywords = ["mcp", "ai", "claude", "tools", "platform"]
+categories = ["development-tools", "web-programming"]
+
+[features]
+default = []
+
+[dependencies]
+# Core
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+tokio = { version = "1", features = ["sync", "io-util", "macros"] }
+tracing = "0.1"
+
+# HTTP client for cross-app communication
+reqwest = { version = "0.11", features = ["json", "rustls-tls"], default-features = false }
+
+# Platform crates
+platform-rbac = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+wiremock = "0.5"

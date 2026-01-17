@@ -1,0 +1,39 @@
+[package]
+name = "platform-events"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Cross-app event bus for the Relay platform"
+keywords = ["events", "pubsub", "messaging", "platform"]
+categories = ["asynchronous", "web-programming"]
+
+[features]
+default = ["memory"]
+memory = []
+redis = ["dep:redis", "dep:hostname", "dep:futures"]
+nats = ["dep:async-nats"]
+
+[dependencies]
+# Core
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+tokio = { version = "1", features = ["sync", "time", "rt"] }
+tracing = "0.1"
+
+# Optional backends
+redis = { version = "0.24", features = ["tokio-comp", "aio"], optional = true }
+async-nats = { version = "0.33", optional = true }
+hostname = { version = "0.3", optional = true }
+futures = { version = "0.3", optional = true }
+
+# Platform crates
+platform-rbac = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

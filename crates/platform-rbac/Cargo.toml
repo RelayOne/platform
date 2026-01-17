@@ -1,0 +1,20 @@
+[package]
+name = "platform-rbac"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Role-based access control for the Relay platform"
+keywords = ["rbac", "permissions", "authorization", "platform"]
+categories = ["authentication", "web-programming"]
+
+[features]
+default = ["serde"]
+serde = []
+
+[dependencies]
+serde = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

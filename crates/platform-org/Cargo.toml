@@ -1,0 +1,23 @@
+[package]
+name = "platform-org"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Multi-tenant organization management for the Relay platform"
+keywords = ["organization", "multi-tenant", "rbac", "platform"]
+categories = ["authentication", "web-programming"]
+
+[features]
+default = ["serde"]
+serde = []
+
+[dependencies]
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

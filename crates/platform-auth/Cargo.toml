@@ -1,0 +1,51 @@
+[package]
+name = "platform-auth"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Unified authentication for the Relay platform (JWT, OAuth, OIDC, SAML)"
+keywords = ["authentication", "jwt", "oauth", "oidc", "saml"]
+categories = ["authentication", "web-programming"]
+
+[features]
+default = ["jwt", "oauth"]
+jwt = ["jsonwebtoken"]
+oauth = ["oauth2"]
+oidc = ["openidconnect"]
+saml = ["samael"]
+full = ["jwt", "oauth", "oidc", "saml"]
+
+[dependencies]
+# Core
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+
+# JWT
+jsonwebtoken = { workspace = true, optional = true }
+
+# OAuth 2.0
+oauth2 = { workspace = true, optional = true }
+
+# OpenID Connect
+openidconnect = { workspace = true, optional = true }
+
+# SAML (optional, requires additional setup)
+samael = { workspace = true, optional = true }
+
+# Crypto
+sha2 = { workspace = true }
+base64 = { workspace = true }
+rand = { workspace = true }
+
+# Platform crates
+platform-org = { workspace = true }
+platform-rbac = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
