@@ -323,7 +323,7 @@ async function uploadToCloud(
       ...headers,
       'Content-Length': data.length.toString(),
     },
-    body: data,
+    body: new Uint8Array(data),
   });
 
   if (!response.ok) {
