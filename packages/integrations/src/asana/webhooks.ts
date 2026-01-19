@@ -1,10 +1,10 @@
 import { createHmac } from 'crypto';
 import { createLogger } from '@relay/logger';
-import {
-  BaseWebhookHandler,
-  type WebhookHandlerConfig,
-  type WebhookRequest,
-  type WebhookResponse,
+import type {
+  WebhookRequest,
+  WebhookResponse,
+  TrackerProvider,
+  SignatureStrategy,
 } from '../tracker-base';
 import type {
   AsanaWebhookPayload,
@@ -25,7 +25,7 @@ const logger = createLogger('asana-webhooks');
 /**
  * Asana webhook configuration.
  */
-export interface AsanaWebhookConfig extends WebhookHandlerConfig {
+export interface AsanaWebhookConfig {
   /** X-Hook-Secret for signature verification */
   hookSecret: string;
 }
@@ -97,20 +97,21 @@ type AsanaEventHandler = (event: ProcessedAsanaEvent) => Promise<void>;
  * }
  * ```
  */
-export class AsanaWebhookHandler extends BaseWebhookHandler {
+export class AsanaWebhookHandler {
   private hookSecret: string;
   private handlers: Map<string, AsanaEventHandler[]> = new Map();
+
+  /** Provider identifier */
+  public readonly provider: TrackerProvider = 'asana';
+
+  /** Signature strategy for this handler */
+  public readonly signatureStrategy: SignatureStrategy = 'x-hook-secret';
 
   /**
    * Creates a new Asana webhook handler.
    * @param config - Webhook configuration
    */
   constructor(config: AsanaWebhookConfig) {
-    super({
-      ...config,
-      signatureStrategy: 'x-hook-secret',
-      signatureHeader: 'x-hook-signature',
-    });
     this.hookSecret = config.hookSecret;
   }
 

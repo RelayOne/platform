@@ -1,9 +1,9 @@
 import { createLogger } from '@relay/logger';
-import {
-  BaseWebhookHandler,
-  type WebhookHandlerConfig,
-  type WebhookRequest,
-  type WebhookResponse,
+import type {
+  WebhookRequest,
+  WebhookResponse,
+  TrackerProvider,
+  SignatureStrategy,
 } from '../tracker-base';
 import type { ClickUpWebhookPayload, ClickUpWebhookEvent } from './types';
 import { ClickUpWebhookPayloadSchema } from './types';
@@ -20,7 +20,7 @@ const logger = createLogger('clickup-webhooks');
 /**
  * ClickUp webhook configuration.
  */
-export interface ClickUpWebhookConfig extends WebhookHandlerConfig {
+export interface ClickUpWebhookConfig {
   /** Webhook secret (optional - ClickUp uses URL verification) */
   secret?: string;
 }
@@ -82,18 +82,21 @@ type ClickUpEventHandler = (event: ProcessedClickUpEvent) => Promise<void>;
  * }
  * ```
  */
-export class ClickUpWebhookHandler extends BaseWebhookHandler {
+export class ClickUpWebhookHandler {
   private handlers: Map<string, ClickUpEventHandler[]> = new Map();
+
+  /** Provider identifier */
+  public readonly provider: TrackerProvider = 'clickup';
+
+  /** Signature strategy for this handler */
+  public readonly signatureStrategy: SignatureStrategy = 'none';
 
   /**
    * Creates a new ClickUp webhook handler.
-   * @param config - Webhook configuration
+   * @param _config - Webhook configuration (optional, unused for ClickUp)
    */
-  constructor(config: ClickUpWebhookConfig = {}) {
-    super({
-      ...config,
-      signatureStrategy: 'none', // ClickUp uses URL verification
-    });
+  constructor(_config: ClickUpWebhookConfig = {}) {
+    // ClickUp uses URL verification, no signature needed
   }
 
   /**

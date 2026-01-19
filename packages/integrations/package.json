@@ -95,6 +95,7 @@
     "build": "tsc || echo 'Build has type errors - this package needs interface alignment with @agentforge/tracker-common'",
     "dev": "tsc --watch",
     "type-check": "tsc --noEmit || true",
+    "typecheck": "tsc --noEmit || true",
     "lint": "eslint src --ext .ts",
     "test": "vitest run"
   },

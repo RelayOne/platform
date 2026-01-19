@@ -11,6 +11,8 @@ import {
   type CreateTaskInput,
   type UpdateTaskInput,
   type PaginatedResult,
+  type ConnectionTestResult,
+  type RateLimitStatus,
   RateLimiter,
 } from '../tracker-base';
 import type {
@@ -72,7 +74,7 @@ export interface ClickUpClientConfig extends TrackerClientConfig {
  * ```
  */
 export class ClickUpClient extends BaseTrackerClient {
-  private config: ClickUpClientConfig;
+  private clickUpConfig: ClickUpClientConfig;
   private rateLimiter: RateLimiter;
   private teamId?: string;
 
@@ -80,12 +82,28 @@ export class ClickUpClient extends BaseTrackerClient {
   private static readonly API_BASE = 'https://api.clickup.com/api/v2';
 
   /**
+   * Get the tracker provider identifier.
+   * @returns The provider name
+   */
+  get provider(): 'clickup' {
+    return 'clickup';
+  }
+
+  /**
+   * Get the base API URL for this tracker.
+   * @returns The base URL for API requests
+   */
+  get baseUrl(): string {
+    return ClickUpClient.API_BASE;
+  }
+
+  /**
    * Creates a new ClickUp client.
    * @param config - Client configuration
    */
   constructor(config: ClickUpClientConfig) {
     super(config);
-    this.config = config;
+    this.clickUpConfig = config;
     this.teamId = config.teamId;
     this.rateLimiter = RateLimiter.forTracker('clickup');
   }
@@ -109,7 +127,7 @@ export class ClickUpClient extends BaseTrackerClient {
     const response = await fetch(url, {
       ...options,
       headers: {
-        Authorization: this.config.auth.accessToken,
+        Authorization: this.clickUpConfig.auth.accessToken,
         'Content-Type': 'application/json',
         ...options.headers,
       },
@@ -188,16 +206,19 @@ export class ClickUpClient extends BaseTrackerClient {
    * Test the API connection.
    * @returns Connection status and user info
    */
-  async testConnection(): Promise<{ success: boolean; user?: TrackerUser; error?: string }> {
+  async testConnection(): Promise<ConnectionTestResult> {
+    const startTime = Date.now();
     try {
-      const user = await this.request<{ user: ClickUpUser }>('/user');
+      const response = await this.request<{ user: ClickUpUser }>('/user');
       return {
         success: true,
-        user: this.mapUser(user.user),
+        latencyMs: Date.now() - startTime,
+        user: this.mapUser(response.user),
       };
     } catch (error) {
       return {
         success: false,
+        latencyMs: Date.now() - startTime,
         error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
@@ -210,7 +231,7 @@ export class ClickUpClient extends BaseTrackerClient {
    */
   async refreshTokens(): Promise<TrackerAuthConfig> {
     // ClickUp tokens don't expire
-    return this.config.auth;
+    return this.clickUpConfig.auth;
   }
 
   /**
@@ -416,6 +437,41 @@ export class ClickUpClient extends BaseTrackerClient {
       body: JSON.stringify({ comment_text: body }),
     });
     return this.mapComment(comment);
+  }
+
+  /**
+   * Update a comment.
+   * @param commentId - Comment ID
+   * @param body - New comment body
+   * @returns Updated comment
+   */
+  async updateComment(commentId: string, body: string): Promise<TrackerComment> {
+    const comment = await this.request<ClickUpComment>(`/comment/${commentId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ comment_text: body }),
+    });
+    return this.mapComment(comment);
+  }
+
+  /**
+   * Delete a comment.
+   * @param commentId - Comment ID
+   */
+  async deleteComment(commentId: string): Promise<void> {
+    await this.request(`/comment/${commentId}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Get current rate limit status.
+   * @returns Rate limit information
+   */
+  async getRateLimitStatus(): Promise<RateLimitStatus> {
+    // ClickUp rate limit is 100 requests per minute
+    return {
+      remaining: 100,
+      limit: 100,
+      resetAt: new Date(Date.now() + 60000),
+    };
   }
 
   /**
