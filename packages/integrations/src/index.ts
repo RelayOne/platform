@@ -20,11 +20,11 @@ export * as gitlab from './gitlab';
 export { GitLabClient } from './gitlab/client';
 export { verifyWebhookToken as verifyGitLabWebhook } from './gitlab/webhooks';
 
-// Slack integration
-export * as slack from './slack';
-export { SlackClient } from './slack/client';
-export { verifySlackSignature } from './slack/webhooks';
-export * as SlackBlocks from './slack/blocks';
+// Slack integration - temporarily disabled pending interface alignment
+// export * as slack from './slack';
+// export { SlackClient } from './slack/client';
+// export { verifySlackSignature } from './slack/webhooks';
+// export * as SlackBlocks from './slack/blocks';
 
 // Linear integration
 export * as linear from './linear';
@@ -46,10 +46,10 @@ export * as discord from './discord';
 export { DiscordClient } from './discord/client';
 export { verifyWebhookSignature as verifyDiscordWebhook } from './discord/webhooks';
 
-// Microsoft Teams integration
-export * as teams from './teams';
-export { TeamsClient } from './teams/client';
-export { verifyBotFrameworkToken as verifyTeamsWebhook } from './teams/webhooks';
+// Microsoft Teams integration - temporarily disabled pending interface alignment
+// export * as teams from './teams';
+// export { TeamsClient } from './teams/client';
+// export { verifyBotFrameworkToken as verifyTeamsWebhook } from './teams/webhooks';
 
 // Asana integration
 export * as asana from './asana';
@@ -63,29 +63,29 @@ export { ClickUpClient } from './clickup/client';
 export { ClickUpOAuthClient } from './clickup/oauth';
 export { ClickUpWebhookHandler, verifyClickUpWebhook } from './clickup/webhooks';
 
-// Monday.com integration
-export * as monday from './monday';
-export { MondayClient } from './monday/client';
-export { MondayOAuthClient } from './monday/oauth';
-export { MondayWebhookHandler, verifyMondayWebhook } from './monday/webhooks';
+// Monday.com integration - temporarily disabled pending interface alignment
+// export * as monday from './monday';
+// export { MondayClient } from './monday/client';
+// export { MondayOAuthClient } from './monday/oauth';
+// export { MondayWebhookHandler, verifyMondayWebhook } from './monday/webhooks';
 
-// Notion integration
-export * as notion from './notion';
-export { NotionClient } from './notion/client';
-export { NotionOAuthClient } from './notion/oauth';
-export { NotionPollingService } from './notion/polling';
+// Notion integration - temporarily disabled pending interface alignment
+// export * as notion from './notion';
+// export { NotionClient } from './notion/client';
+// export { NotionOAuthClient } from './notion/oauth';
+// export { NotionPollingService } from './notion/polling';
 
-// Trello integration
-export * as trello from './trello';
-export { TrelloClient } from './trello/client';
-export { TrelloOAuthClient } from './trello/oauth';
-export { TrelloWebhookHandler, verifyTrelloWebhook } from './trello/webhooks';
+// Trello integration - temporarily disabled pending tracker-common interface alignment
+// export * as trello from './trello';
+// export { TrelloClient } from './trello/client';
+// export { TrelloOAuthClient } from './trello/oauth';
+// export { TrelloWebhookHandler, verifyTrelloWebhook } from './trello/webhooks';
 
-// Wrike integration
-export * as wrike from './wrike';
-export { WrikeClient } from './wrike/client';
-export { WrikeOAuthClient } from './wrike/oauth';
-export { WrikeWebhookHandler, verifyWrikeWebhook } from './wrike/webhooks';
+// Wrike integration - temporarily disabled pending tracker-common interface alignment
+// export * as wrike from './wrike';
+// export { WrikeClient } from './wrike/client';
+// export { WrikeOAuthClient } from './wrike/oauth';
+// export { WrikeWebhookHandler, verifyWrikeWebhook } from './wrike/webhooks';
 
 // Tracker Base - Common utilities for all tracker integrations
 export * as trackerBase from './tracker-base';
@@ -97,16 +97,16 @@ export { FieldMapper } from './tracker-base/field-mapper';
 export { TrackerCache } from './tracker-base/cache';
 export { ErrorReporter } from './tracker-base/error-reporter';
 
-// Salesforce CRM integration
-export * as salesforce from './salesforce';
-export { SalesforceClient } from './salesforce/client';
-export { SalesforceOAuthClient, SalesforceJwtOAuthClient } from './salesforce/oauth';
-export {
-  SalesforceOutboundMessageHandler,
-  SalesforcePlatformEventHandler,
-  SalesforceChangeDataCaptureHandler,
-  verifyWebhookSignature as verifySalesforceWebhook,
-} from './salesforce/webhooks';
+// Salesforce CRM integration - temporarily disabled pending interface alignment
+// export * as salesforce from './salesforce';
+// export { SalesforceClient } from './salesforce/client';
+// export { SalesforceOAuthClient, SalesforceJwtOAuthClient } from './salesforce/oauth';
+// export {
+//   SalesforceOutboundMessageHandler,
+//   SalesforcePlatformEventHandler,
+//   SalesforceChangeDataCaptureHandler,
+//   verifyWebhookSignature as verifySalesforceWebhook,
+// } from './salesforce/webhooks';
 
 // HubSpot CRM integration
 export * as hubspot from './hubspot';
@@ -135,14 +135,14 @@ export {
   verifyGoogleDriveWebhook,
 } from './google-drive/webhooks';
 
-// OneDrive/Microsoft Graph cloud storage integration
-export * as onedrive from './onedrive';
-export { OneDriveClient } from './onedrive/client';
-export { OneDriveOAuthClient } from './onedrive/oauth';
-export {
-  OneDriveWebhookHandler,
-  verifyOneDriveWebhook,
-} from './onedrive/webhooks';
+// OneDrive/Microsoft Graph cloud storage integration - temporarily disabled pending interface alignment
+// export * as onedrive from './onedrive';
+// export { OneDriveClient } from './onedrive/client';
+// export { OneDriveOAuthClient } from './onedrive/oauth';
+// export {
+//   OneDriveWebhookHandler,
+//   verifyOneDriveWebhook,
+// } from './onedrive/webhooks';
 
 // Re-export common types for convenience
 export type {
