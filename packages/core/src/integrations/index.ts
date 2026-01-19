@@ -6,6 +6,8 @@
  * for third-party services used across the Relay Platform.
  */
 
+import { createHmac, createHash, randomBytes } from 'crypto';
+
 /**
  * Supported integration providers
  */
@@ -122,7 +124,6 @@ export function verifyWebhookSignature(
   signature: string,
   options: WebhookVerificationOptions,
 ): boolean {
-  const { createHmac } = require('crypto');
   const hmac = createHmac(options.algorithm, options.secret);
   hmac.update(payload);
   const expected = options.prefix
@@ -187,7 +188,6 @@ export function buildAuthorizationUrl(config: OAuthConfig, state: string, codeVe
 
   if (config.usePkce && codeVerifier) {
     // Generate code challenge from verifier
-    const { createHash } = require('crypto');
     const codeChallenge = createHash('sha256')
       .update(codeVerifier)
       .digest('base64url');
@@ -202,6 +202,5 @@ export function buildAuthorizationUrl(config: OAuthConfig, state: string, codeVe
  * Generate PKCE code verifier
  */
 export function generateCodeVerifier(): string {
-  const { randomBytes } = require('crypto');
   return randomBytes(32).toString('base64url');
 }

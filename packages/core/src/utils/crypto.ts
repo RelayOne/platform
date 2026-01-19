@@ -3,7 +3,7 @@
  * @module @relay/platform/utils/crypto
  */
 
-import { createHmac, randomBytes, createCipheriv, createDecipheriv } from 'crypto';
+import { createHmac, createHash, randomBytes, createCipheriv, createDecipheriv } from 'crypto';
 
 /**
  * Generate a cryptographically secure random string
@@ -47,7 +47,6 @@ export async function sha256(data: string): Promise<string> {
  * Hash data with SHA-256 (synchronous, Node.js only)
  */
 export function sha256Sync(data: string): string {
-  const { createHash } = require('crypto');
   return createHash('sha256').update(data).digest('hex');
 }
 
