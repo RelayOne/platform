@@ -439,12 +439,20 @@ pub mod redis_bus {
 
         /// Get the stream key for a topic.
         fn stream_key(&self, topic: &str) -> String {
-            format!("{}:stream:{}", self.config.key_prefix, topic.replace('.', ":"))
+            format!(
+                "{}:stream:{}",
+                self.config.key_prefix,
+                topic.replace('.', ":")
+            )
         }
 
         /// Get the pubsub channel for a topic.
         fn channel_key(&self, topic: &str) -> String {
-            format!("{}:pubsub:{}", self.config.key_prefix, topic.replace('.', ":"))
+            format!(
+                "{}:pubsub:{}",
+                self.config.key_prefix,
+                topic.replace('.', ":")
+            )
         }
 
         /// Publish to Redis Stream for persistence.
@@ -505,7 +513,8 @@ pub mod redis_bus {
                 .map_err(|e| EventBusError::ConnectionError(e.to_string()))?;
 
             // Convert topic pattern to Redis pattern
-            let pattern = self.channel_key(topic)
+            let pattern = self
+                .channel_key(topic)
                 .replace("*", "[^:]*")
                 .replace("#", "*");
 
@@ -524,10 +533,9 @@ pub mod redis_bus {
                 let mut stream = pubsub.on_message();
 
                 while running.load(Ordering::Relaxed) {
-                    match tokio::time::timeout(
-                        std::time::Duration::from_secs(1),
-                        stream.next(),
-                    ).await {
+                    match tokio::time::timeout(std::time::Duration::from_secs(1), stream.next())
+                        .await
+                    {
                         Ok(Some(msg)) => {
                             let payload: String = match msg.get_payload() {
                                 Ok(p) => p,
@@ -551,7 +559,8 @@ pub mod redis_bus {
                             let hdlrs = handlers.read().await;
                             for handler in hdlrs.iter() {
                                 for handler_topic in handler.topics() {
-                                    if MemoryEventBus::topic_matches(&handler_topic, &event.topic()) {
+                                    if MemoryEventBus::topic_matches(&handler_topic, &event.topic())
+                                    {
                                         let handler = handler.clone();
                                         let event = event.clone();
                                         tokio::spawn(async move {
@@ -741,10 +750,8 @@ mod tests {
         bus.publish(event.clone()).await.unwrap();
 
         // Receive event
-        let received = tokio::time::timeout(
-            std::time::Duration::from_millis(100),
-            sub.recv(),
-        ).await;
+        let received =
+            tokio::time::timeout(std::time::Duration::from_millis(100), sub.recv()).await;
 
         assert!(received.is_ok());
     }
@@ -752,20 +759,44 @@ mod tests {
     #[test]
     fn test_topic_matching() {
         // Exact match
-        assert!(MemoryEventBus::topic_matches("verity.document.created", "verity.document.created"));
+        assert!(MemoryEventBus::topic_matches(
+            "verity.document.created",
+            "verity.document.created"
+        ));
 
         // Single wildcard
-        assert!(MemoryEventBus::topic_matches("verity.document.*", "verity.document.created"));
-        assert!(MemoryEventBus::topic_matches("verity.*.created", "verity.document.created"));
-        assert!(MemoryEventBus::topic_matches("*.document.created", "verity.document.created"));
+        assert!(MemoryEventBus::topic_matches(
+            "verity.document.*",
+            "verity.document.created"
+        ));
+        assert!(MemoryEventBus::topic_matches(
+            "verity.*.created",
+            "verity.document.created"
+        ));
+        assert!(MemoryEventBus::topic_matches(
+            "*.document.created",
+            "verity.document.created"
+        ));
 
         // Multi-segment wildcard
-        assert!(MemoryEventBus::topic_matches("verity.#", "verity.document.created"));
-        assert!(MemoryEventBus::topic_matches("#", "verity.document.created"));
+        assert!(MemoryEventBus::topic_matches(
+            "verity.#",
+            "verity.document.created"
+        ));
+        assert!(MemoryEventBus::topic_matches(
+            "#",
+            "verity.document.created"
+        ));
 
         // Non-matches
-        assert!(!MemoryEventBus::topic_matches("verity.document.updated", "verity.document.created"));
-        assert!(!MemoryEventBus::topic_matches("noteman.document.*", "verity.document.created"));
+        assert!(!MemoryEventBus::topic_matches(
+            "verity.document.updated",
+            "verity.document.created"
+        ));
+        assert!(!MemoryEventBus::topic_matches(
+            "noteman.document.*",
+            "verity.document.created"
+        ));
     }
 
     #[tokio::test]

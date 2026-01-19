@@ -165,7 +165,9 @@ impl VerityClient {
     pub async fn get_document(&self, document_id: &str) -> Result<Document, VerityError> {
         debug!("Fetching document {}", document_id);
 
-        let url = self.endpoint.url(&format!("/api/v1/documents/{}", document_id));
+        let url = self
+            .endpoint
+            .url(&format!("/api/v1/documents/{}", document_id));
         let mut request = self.client.get(&url);
 
         if let Some(ref api_key) = self.endpoint.api_key {
@@ -210,7 +212,10 @@ impl VerityClient {
         &self,
         params: VerifyContentParams,
     ) -> Result<VerifyContentResponse, VerityError> {
-        debug!("Verifying content with level: {}", params.verification_level);
+        debug!(
+            "Verifying content with level: {}",
+            params.verification_level
+        );
 
         let url = self.endpoint.url("/api/v1/verify");
         let mut request = self.client.post(&url).json(&params);
@@ -230,7 +235,9 @@ impl VerityClient {
     pub async fn get_assertion(&self, assertion_id: &str) -> Result<Assertion, VerityError> {
         debug!("Fetching assertion {}", assertion_id);
 
-        let url = self.endpoint.url(&format!("/api/v1/assertions/{}", assertion_id));
+        let url = self
+            .endpoint
+            .url(&format!("/api/v1/assertions/{}", assertion_id));
         let mut request = self.client.get(&url);
 
         if let Some(ref api_key) = self.endpoint.api_key {
@@ -259,7 +266,10 @@ impl VerityClient {
         }
 
         if !status.is_success() {
-            let message = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            let message = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
             warn!("Verity API error ({}): {}", status.as_u16(), message);
             return Err(VerityError::ApiError {
                 status: status.as_u16(),

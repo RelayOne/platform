@@ -86,7 +86,11 @@ impl Permission {
     /// let perm = Permission::for_resource(ResourceType::Document, Action::Read, "doc-123");
     /// assert_eq!(perm.resource_id, Some("doc-123".to_string()));
     /// ```
-    pub fn for_resource(resource: ResourceType, action: Action, resource_id: impl Into<String>) -> Self {
+    pub fn for_resource(
+        resource: ResourceType,
+        action: Action,
+        resource_id: impl Into<String>,
+    ) -> Self {
         Self {
             resource,
             action,
@@ -299,7 +303,11 @@ impl PermissionSet {
 
         // Check for wildcard match (permission without resource_id)
         if permission.resource_id.is_some() {
-            let wildcard = format!("{}:{}", permission.resource.as_str(), permission.action.as_str());
+            let wildcard = format!(
+                "{}:{}",
+                permission.resource.as_str(),
+                permission.action.as_str()
+            );
             if self.permissions.contains(&wildcard) {
                 return true;
             }
@@ -477,7 +485,8 @@ mod tests {
         assert!(specific.matches(&specific));
 
         // Different actions don't match
-        let different_action = Permission::for_resource(ResourceType::Document, Action::Create, "doc-123");
+        let different_action =
+            Permission::for_resource(ResourceType::Document, Action::Create, "doc-123");
         assert!(!specific.matches(&different_action));
     }
 
@@ -519,7 +528,8 @@ mod tests {
 
     #[test]
     fn test_permission_set_from_strings() {
-        let set = PermissionSet::from_strings(&["document:read", "document:create", "meeting:update"]);
+        let set =
+            PermissionSet::from_strings(&["document:read", "document:create", "meeting:update"]);
         assert_eq!(set.len(), 3);
         assert!(set.has(&Permission::new(ResourceType::Document, Action::Read)));
         assert!(set.has(&Permission::new(ResourceType::Meeting, Action::Update)));

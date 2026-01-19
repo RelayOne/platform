@@ -6,11 +6,10 @@
 
 use crate::clients::config::ServiceConfig;
 use crate::clients::verity::{
-    VerityClient, VerifyDocumentParams as ClientVerifyParams,
-    ExtractAssertionsParams as ClientExtractParams,
-    SearchKnowledgeParams as ClientSearchParams,
     CheckPropagationParams as ClientPropagationParams,
-    SearchFilters,
+    ExtractAssertionsParams as ClientExtractParams, SearchFilters,
+    SearchKnowledgeParams as ClientSearchParams, VerifyDocumentParams as ClientVerifyParams,
+    VerityClient,
 };
 use crate::server::{McpServerError, McpServerResult, Tool, ToolContext};
 use crate::types::{ToolDefinition, ToolResult};
@@ -63,7 +62,11 @@ impl Tool for VerifyDocumentTool {
     }
 
     #[instrument(skip(self, context), fields(tool = "verify_document"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: VerifyDocumentParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
@@ -77,18 +80,19 @@ impl Tool for VerifyDocumentTool {
         };
 
         match client.verify_document(client_params).await {
-            Ok(response) => {
-                Ok(ToolResult::json(serde_json::json!({
-                    "document_id": response.document_id,
-                    "job_id": response.job_id,
-                    "status": response.status,
-                    "message": response.message,
-                    "estimated_time_seconds": response.estimated_time_seconds
-                })))
-            }
+            Ok(response) => Ok(ToolResult::json(serde_json::json!({
+                "document_id": response.document_id,
+                "job_id": response.job_id,
+                "status": response.status,
+                "message": response.message,
+                "estimated_time_seconds": response.estimated_time_seconds
+            }))),
             Err(e) => {
                 error!("Failed to verify document: {}", e);
-                Ok(ToolResult::error(format!("Failed to verify document: {}", e)))
+                Ok(ToolResult::error(format!(
+                    "Failed to verify document: {}",
+                    e
+                )))
             }
         }
     }
@@ -110,37 +114,47 @@ pub struct ExtractAssertionsTool;
 #[async_trait]
 impl Tool for ExtractAssertionsTool {
     fn definition(&self) -> ToolDefinition {
-        ToolDefinition::new("verity_extract_assertions", "Extract factual assertions from text content")
-            .with_app(App::Verity)
-            .with_category("extraction")
-            .with_schema(serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "content": {
-                        "type": "string",
-                        "description": "The text content to analyze"
-                    },
-                    "document_id": {
-                        "type": "string",
-                        "description": "Optional document ID to associate assertions with"
-                    },
-                    "categories": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Categories to focus on (e.g., 'statistics', 'dates', 'claims')"
-                    }
+        ToolDefinition::new(
+            "verity_extract_assertions",
+            "Extract factual assertions from text content",
+        )
+        .with_app(App::Verity)
+        .with_category("extraction")
+        .with_schema(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "description": "The text content to analyze"
                 },
-                "required": ["content"]
-            }))
-            .with_permissions(vec!["assertion:create".to_string()])
+                "document_id": {
+                    "type": "string",
+                    "description": "Optional document ID to associate assertions with"
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Categories to focus on (e.g., 'statistics', 'dates', 'claims')"
+                }
+            },
+            "required": ["content"]
+        }))
+        .with_permissions(vec!["assertion:create".to_string()])
     }
 
     #[instrument(skip(self, context, args), fields(tool = "extract_assertions"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: ExtractAssertionsParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
-        debug!("Extracting assertions from content (length: {} chars)", params.content.len());
+        debug!(
+            "Extracting assertions from content (length: {} chars)",
+            params.content.len()
+        );
 
         let client = get_client();
 
@@ -151,17 +165,18 @@ impl Tool for ExtractAssertionsTool {
         };
 
         match client.extract_assertions(client_params).await {
-            Ok(response) => {
-                Ok(ToolResult::json(serde_json::json!({
-                    "status": response.status,
-                    "assertion_count": response.assertion_count,
-                    "message": response.message,
-                    "assertions": response.assertions
-                })))
-            }
+            Ok(response) => Ok(ToolResult::json(serde_json::json!({
+                "status": response.status,
+                "assertion_count": response.assertion_count,
+                "message": response.message,
+                "assertions": response.assertions
+            }))),
             Err(e) => {
                 error!("Failed to extract assertions: {}", e);
-                Ok(ToolResult::error(format!("Failed to extract assertions: {}", e)))
+                Ok(ToolResult::error(format!(
+                    "Failed to extract assertions: {}",
+                    e
+                )))
             }
         }
     }
@@ -184,50 +199,57 @@ pub struct SearchKnowledgeTool;
 #[async_trait]
 impl Tool for SearchKnowledgeTool {
     fn definition(&self) -> ToolDefinition {
-        ToolDefinition::new("verity_search_knowledge", "Search the verified knowledge base for facts and sources")
-            .with_app(App::Verity)
-            .with_category("search")
-            .with_schema(serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "Search query"
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "description": "Maximum number of results",
-                        "default": 10
-                    },
-                    "filters": {
-                        "type": "object",
-                        "properties": {
-                            "source_types": {
-                                "type": "array",
-                                "items": {"type": "string"}
-                            },
-                            "min_confidence": {
-                                "type": "number",
-                                "minimum": 0,
-                                "maximum": 1
-                            },
-                            "date_range": {
-                                "type": "object",
-                                "properties": {
-                                    "start": {"type": "string", "format": "date"},
-                                    "end": {"type": "string", "format": "date"}
-                                }
+        ToolDefinition::new(
+            "verity_search_knowledge",
+            "Search the verified knowledge base for facts and sources",
+        )
+        .with_app(App::Verity)
+        .with_category("search")
+        .with_schema(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Search query"
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Maximum number of results",
+                    "default": 10
+                },
+                "filters": {
+                    "type": "object",
+                    "properties": {
+                        "source_types": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        },
+                        "min_confidence": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                        },
+                        "date_range": {
+                            "type": "object",
+                            "properties": {
+                                "start": {"type": "string", "format": "date"},
+                                "end": {"type": "string", "format": "date"}
                             }
                         }
                     }
-                },
-                "required": ["query"]
-            }))
-            .with_permissions(vec!["knowledge:read".to_string()])
+                }
+            },
+            "required": ["query"]
+        }))
+        .with_permissions(vec!["knowledge:read".to_string()])
     }
 
     #[instrument(skip(self, context), fields(tool = "search_knowledge"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: SearchKnowledgeParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
@@ -236,25 +258,21 @@ impl Tool for SearchKnowledgeTool {
         let client = get_client();
 
         // Convert filters if provided
-        let filters = params.filters.map(|f| {
-            SearchFilters {
-                source_types: f.get("source_types")
-                    .and_then(|v| v.as_array())
-                    .map(|arr| arr.iter()
-                        .filter_map(|v| v.as_str().map(String::from))
-                        .collect()),
-                min_confidence: f.get("min_confidence")
-                    .and_then(|v| v.as_f64()),
-                date_range: f.get("date_range")
-                    .and_then(|dr| {
-                        let start = dr.get("start")?.as_str()?;
-                        let end = dr.get("end")?.as_str()?;
-                        Some(crate::clients::verity::DateRange {
-                            start: start.to_string(),
-                            end: end.to_string(),
-                        })
-                    }),
-            }
+        let filters = params.filters.map(|f| SearchFilters {
+            source_types: f.get("source_types").and_then(|v| v.as_array()).map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect()
+            }),
+            min_confidence: f.get("min_confidence").and_then(|v| v.as_f64()),
+            date_range: f.get("date_range").and_then(|dr| {
+                let start = dr.get("start")?.as_str()?;
+                let end = dr.get("end")?.as_str()?;
+                Some(crate::clients::verity::DateRange {
+                    start: start.to_string(),
+                    end: end.to_string(),
+                })
+            }),
         });
 
         let client_params = ClientSearchParams {
@@ -264,16 +282,17 @@ impl Tool for SearchKnowledgeTool {
         };
 
         match client.search_knowledge(client_params).await {
-            Ok(response) => {
-                Ok(ToolResult::json(serde_json::json!({
-                    "query": response.query,
-                    "total_results": response.total_results,
-                    "results": response.results
-                })))
-            }
+            Ok(response) => Ok(ToolResult::json(serde_json::json!({
+                "query": response.query,
+                "total_results": response.total_results,
+                "results": response.results
+            }))),
             Err(e) => {
                 error!("Failed to search knowledge: {}", e);
-                Ok(ToolResult::error(format!("Failed to search knowledge: {}", e)))
+                Ok(ToolResult::error(format!(
+                    "Failed to search knowledge: {}",
+                    e
+                )))
             }
         }
     }
@@ -300,35 +319,45 @@ pub struct CheckPropagationTool;
 #[async_trait]
 impl Tool for CheckPropagationTool {
     fn definition(&self) -> ToolDefinition {
-        ToolDefinition::new("verity_check_propagation", "Check how an assertion propagates through related documents")
-            .with_app(App::Verity)
-            .with_category("analysis")
-            .with_schema(serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "assertion_id": {
-                        "type": "string",
-                        "description": "The assertion ID to trace"
-                    },
-                    "depth": {
-                        "type": "integer",
-                        "description": "How many levels of references to follow",
-                        "default": 2,
-                        "minimum": 1,
-                        "maximum": 5
-                    }
+        ToolDefinition::new(
+            "verity_check_propagation",
+            "Check how an assertion propagates through related documents",
+        )
+        .with_app(App::Verity)
+        .with_category("analysis")
+        .with_schema(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "assertion_id": {
+                    "type": "string",
+                    "description": "The assertion ID to trace"
                 },
-                "required": ["assertion_id"]
-            }))
-            .with_permissions(vec!["propagation:read".to_string()])
+                "depth": {
+                    "type": "integer",
+                    "description": "How many levels of references to follow",
+                    "default": 2,
+                    "minimum": 1,
+                    "maximum": 5
+                }
+            },
+            "required": ["assertion_id"]
+        }))
+        .with_permissions(vec!["propagation:read".to_string()])
     }
 
     #[instrument(skip(self, context), fields(tool = "check_propagation"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: CheckPropagationParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
-        debug!("Checking propagation for assertion: {}", params.assertion_id);
+        debug!(
+            "Checking propagation for assertion: {}",
+            params.assertion_id
+        );
 
         let client = get_client();
 
@@ -338,17 +367,18 @@ impl Tool for CheckPropagationTool {
         };
 
         match client.check_propagation(client_params).await {
-            Ok(response) => {
-                Ok(ToolResult::json(serde_json::json!({
-                    "assertion_id": response.assertion_id,
-                    "propagation_depth": response.propagation_depth,
-                    "affected_documents": response.affected_documents,
-                    "impact_score": response.impact_score
-                })))
-            }
+            Ok(response) => Ok(ToolResult::json(serde_json::json!({
+                "assertion_id": response.assertion_id,
+                "propagation_depth": response.propagation_depth,
+                "affected_documents": response.affected_documents,
+                "impact_score": response.impact_score
+            }))),
             Err(e) => {
                 error!("Failed to check propagation: {}", e);
-                Ok(ToolResult::error(format!("Failed to check propagation: {}", e)))
+                Ok(ToolResult::error(format!(
+                    "Failed to check propagation: {}",
+                    e
+                )))
             }
         }
     }
@@ -399,7 +429,8 @@ mod tests {
     #[test]
     fn test_tool_categories() {
         let tools = verity_tools();
-        let categories: Vec<_> = tools.iter()
+        let categories: Vec<_> = tools
+            .iter()
             .map(|t| t.definition().category.clone())
             .collect();
 

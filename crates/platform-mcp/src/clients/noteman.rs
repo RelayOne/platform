@@ -162,7 +162,9 @@ impl NoteManClient {
     pub async fn get_meeting(&self, meeting_id: &str) -> Result<Meeting, NoteManError> {
         debug!("Fetching meeting {}", meeting_id);
 
-        let url = self.endpoint.url(&format!("/api/v1/meetings/{}", meeting_id));
+        let url = self
+            .endpoint
+            .url(&format!("/api/v1/meetings/{}", meeting_id));
         let mut request = self.client.get(&url);
 
         if let Some(ref api_key) = self.endpoint.api_key {
@@ -187,7 +189,10 @@ impl NoteManClient {
         meeting_id: &str,
         content_type: &str,
     ) -> Result<MeetingContent, NoteManError> {
-        debug!("Fetching {} content for meeting {}", content_type, meeting_id);
+        debug!(
+            "Fetching {} content for meeting {}",
+            content_type, meeting_id
+        );
 
         let url = self.endpoint.url(&format!(
             "/api/v1/meetings/{}/content?type={}",
@@ -213,7 +218,9 @@ impl NoteManClient {
     ) -> Result<Vec<Decision>, NoteManError> {
         debug!("Fetching decisions for meeting {}", meeting_id);
 
-        let url = self.endpoint.url(&format!("/api/v1/meetings/{}/decisions", meeting_id));
+        let url = self
+            .endpoint
+            .url(&format!("/api/v1/meetings/{}/decisions", meeting_id));
         let mut request = self.client.get(&url);
 
         if let Some(ref api_key) = self.endpoint.api_key {
@@ -259,7 +266,10 @@ impl NoteManClient {
         }
 
         if !status.is_success() {
-            let message = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            let message = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
             warn!("NoteMan API error ({}): {}", status.as_u16(), message);
             return Err(NoteManError::ApiError {
                 status: status.as_u16(),

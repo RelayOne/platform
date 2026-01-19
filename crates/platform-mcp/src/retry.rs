@@ -163,10 +163,7 @@ where
         match f().await {
             Ok(result) => {
                 if attempt > 1 {
-                    tracing::info!(
-                        attempts = attempt,
-                        "Operation succeeded after retry"
-                    );
+                    tracing::info!(attempts = attempt, "Operation succeeded after retry");
                 }
                 return Ok(result);
             }
@@ -191,7 +188,8 @@ where
 
                 // Calculate next delay with exponential backoff
                 delay = Duration::from_secs_f64(
-                    (delay.as_secs_f64() * config.exponential_base).min(config.max_delay.as_secs_f64()),
+                    (delay.as_secs_f64() * config.exponential_base)
+                        .min(config.max_delay.as_secs_f64()),
                 );
             }
         }
@@ -258,10 +256,7 @@ where
         match f().await {
             Ok(result) => {
                 if attempt > 1 {
-                    tracing::info!(
-                        attempts = attempt,
-                        "Operation succeeded after retry"
-                    );
+                    tracing::info!(attempts = attempt, "Operation succeeded after retry");
                 }
                 return Ok(result);
             }
@@ -293,7 +288,8 @@ where
 
                 // Calculate next delay with exponential backoff
                 delay = Duration::from_secs_f64(
-                    (delay.as_secs_f64() * config.exponential_base).min(config.max_delay.as_secs_f64()),
+                    (delay.as_secs_f64() * config.exponential_base)
+                        .min(config.max_delay.as_secs_f64()),
                 );
             }
         }

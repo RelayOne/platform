@@ -93,4 +93,6 @@ pub use error::{AuthError, AuthResult};
 pub use jwt::{JwtAlgorithm, JwtConfig, JwtService, TokenPair};
 
 #[cfg(feature = "oauth")]
-pub use oauth::{OAuthConfig, OAuthProvider, OAuthProviderClient, OAuthState, OAuthTokens, OAuthUserInfo};
+pub use oauth::{
+    OAuthConfig, OAuthProvider, OAuthProviderClient, OAuthState, OAuthTokens, OAuthUserInfo,
+};

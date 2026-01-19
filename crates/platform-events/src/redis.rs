@@ -3,8 +3,10 @@
 //! This module provides a Redis-based implementation of the event bus,
 //! enabling multiple application instances to communicate across servers.
 
+use crate::bus::{
+    EventBus, EventBusError, EventBusResult, EventBusStats, EventHandler, Subscription,
+};
 use crate::types::Event;
-use crate::bus::{EventBus, EventBusError, EventBusResult, EventBusStats, EventHandler, Subscription};
 use async_trait::async_trait;
 use redis::aio::MultiplexedConnection;
 use redis::{AsyncCommands, Client, RedisError};
@@ -72,8 +74,8 @@ impl RedisEventBus {
     /// }
     /// ```
     pub async fn new(redis_url: &str, prefix: &str) -> EventBusResult<Self> {
-        let client = Client::open(redis_url)
-            .map_err(|e| EventBusError::ConnectionError(e.to_string()))?;
+        let client =
+            Client::open(redis_url).map_err(|e| EventBusError::ConnectionError(e.to_string()))?;
 
         // Test connection
         let _ = client

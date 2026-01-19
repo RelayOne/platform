@@ -3,14 +3,14 @@
 //! This module provides pre-built tools for cross-app workflows.
 //! Each tool category handles integration between specific apps.
 
-pub mod verity;
 pub mod noteman;
 pub mod shipcheck;
+pub mod verity;
 pub mod workflow;
 
-pub use verity::*;
 pub use noteman::*;
 pub use shipcheck::*;
+pub use verity::*;
 pub use workflow::*;
 
 use crate::server::Tool;

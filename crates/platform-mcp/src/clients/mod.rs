@@ -8,12 +8,12 @@
 //! Each client handles authentication, request signing, and error handling for
 //! its respective service. The clients use shared configuration for service URLs.
 
+pub mod config;
 pub mod noteman;
 pub mod shipcheck;
 pub mod verity;
-pub mod config;
 
+pub use config::ServiceConfig;
 pub use noteman::NoteManClient;
 pub use shipcheck::ShipCheckClient;
 pub use verity::VerityClient;
-pub use config::ServiceConfig;

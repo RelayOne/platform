@@ -9,16 +9,14 @@
 //! cross-app integrations.
 
 use crate::clients::config::ServiceConfig;
-use crate::clients::noteman::{
-    NoteManClient, CreateDiscussionParams as ClientDiscussionParams,
-};
+use crate::clients::noteman::{CreateDiscussionParams as ClientDiscussionParams, NoteManClient};
 use crate::clients::shipcheck::{
-    ShipCheckClient, LinkDecisionParams as ClientLinkParams,
-    SyncTasksParams as ClientSyncParams, ActionItemSync,
+    ActionItemSync, LinkDecisionParams as ClientLinkParams, ShipCheckClient,
+    SyncTasksParams as ClientSyncParams,
 };
 use crate::clients::verity::{
-    VerityClient, CreateDocumentParams as ClientCreateDocParams,
-    VerifyContentParams as ClientVerifyContentParams,
+    CreateDocumentParams as ClientCreateDocParams,
+    VerifyContentParams as ClientVerifyContentParams, VerityClient,
 };
 use crate::server::{McpServerError, McpServerResult, Tool, ToolContext};
 use crate::types::{ToolDefinition, ToolResult};
@@ -121,22 +119,38 @@ impl Tool for VerifyMeetingNotesTool {
     }
 
     #[instrument(skip(self, context), fields(tool = "verify_meeting_notes"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: VerifyMeetingNotesParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
-        info!("Starting meeting notes verification workflow for meeting: {}", params.meeting_id);
+        info!(
+            "Starting meeting notes verification workflow for meeting: {}",
+            params.meeting_id
+        );
 
         let noteman = get_noteman_client();
         let verity = get_verity_client();
 
         // Step 1: Fetch meeting content from NoteMan
-        debug!("Fetching {} content from NoteMan for meeting {}", params.content_type, params.meeting_id);
-        let meeting_content = match noteman.get_meeting_content(&params.meeting_id, &params.content_type).await {
+        debug!(
+            "Fetching {} content from NoteMan for meeting {}",
+            params.content_type, params.meeting_id
+        );
+        let meeting_content = match noteman
+            .get_meeting_content(&params.meeting_id, &params.content_type)
+            .await
+        {
             Ok(content) => content,
             Err(e) => {
                 error!("Failed to fetch meeting content: {}", e);
-                return Ok(ToolResult::error(format!("Failed to fetch meeting content: {}", e)));
+                return Ok(ToolResult::error(format!(
+                    "Failed to fetch meeting content: {}",
+                    e
+                )));
             }
         };
 
@@ -158,7 +172,8 @@ impl Tool for VerifyMeetingNotesTool {
 
         match verity.create_document(create_params).await {
             Ok(response) => {
-                info!("Verification initiated for meeting {}: doc={}, verification={}",
+                info!(
+                    "Verification initiated for meeting {}: doc={}, verification={}",
                     params.meeting_id,
                     response.document_id,
                     response.verification_id.as_deref().unwrap_or("pending")
@@ -176,7 +191,10 @@ impl Tool for VerifyMeetingNotesTool {
             }
             Err(e) => {
                 error!("Failed to create document in Verity: {}", e);
-                Ok(ToolResult::error(format!("Failed to initiate verification: {}", e)))
+                Ok(ToolResult::error(format!(
+                    "Failed to initiate verification: {}",
+                    e
+                )))
             }
         }
     }
@@ -270,11 +288,18 @@ impl Tool for LinkCodeDecisionTool {
     }
 
     #[instrument(skip(self, context), fields(tool = "link_code_decision"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: LinkCodeDecisionParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
-        info!("Linking code decision from meeting {} to repository {}", params.meeting_id, params.repository_id);
+        info!(
+            "Linking code decision from meeting {} to repository {}",
+            params.meeting_id, params.repository_id
+        );
 
         let noteman = get_noteman_client();
         let shipcheck = get_shipcheck_client();
@@ -286,19 +311,23 @@ impl Tool for LinkCodeDecisionTool {
             // Fetch decision from NoteMan
             debug!("Fetching decision {} from NoteMan", decision_id);
             match noteman.get_meeting_decisions(&params.meeting_id).await {
-                Ok(decisions) => {
-                    decisions.iter()
-                        .find(|d| &d.id == decision_id)
-                        .map(|d| d.text.clone())
-                        .unwrap_or_else(|| format!("Decision {}", decision_id))
-                }
+                Ok(decisions) => decisions
+                    .iter()
+                    .find(|d| &d.id == decision_id)
+                    .map(|d| d.text.clone())
+                    .unwrap_or_else(|| format!("Decision {}", decision_id)),
                 Err(e) => {
                     error!("Failed to fetch decisions from NoteMan: {}", e);
-                    return Ok(ToolResult::error(format!("Failed to fetch decision: {}", e)));
+                    return Ok(ToolResult::error(format!(
+                        "Failed to fetch decision: {}",
+                        e
+                    )));
                 }
             }
         } else {
-            return Ok(ToolResult::error("Either decision_id or decision_text must be provided"));
+            return Ok(ToolResult::error(
+                "Either decision_id or decision_text must be provided",
+            ));
         };
 
         // Step 2: Link decision in ShipCheck
@@ -366,65 +395,81 @@ impl Tool for VerifyDocumentationTool {
     fn definition(&self) -> ToolDefinition {
         ToolDefinition::new(
             "workflow_verify_documentation",
-            "Verify repository documentation accuracy using Verity"
+            "Verify repository documentation accuracy using Verity",
         )
-            .with_app(App::Shared)
-            .with_category("workflow")
-            .with_schema(serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "repository_id": {
-                        "type": "string",
-                        "description": "ShipCheck repository ID"
-                    },
-                    "paths": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Documentation paths to verify (default: README.md, docs/)",
-                        "default": ["README.md", "docs/"]
-                    },
-                    "check_code_examples": {
-                        "type": "boolean",
-                        "description": "Verify that code examples are accurate",
-                        "default": true
-                    },
-                    "check_api_docs": {
-                        "type": "boolean",
-                        "description": "Verify API documentation against actual implementation",
-                        "default": true
-                    },
-                    "compare_to_code": {
-                        "type": "boolean",
-                        "description": "Cross-reference documentation claims with codebase",
-                        "default": true
-                    }
+        .with_app(App::Shared)
+        .with_category("workflow")
+        .with_schema(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "repository_id": {
+                    "type": "string",
+                    "description": "ShipCheck repository ID"
                 },
-                "required": ["repository_id"]
-            }))
-            .with_permissions(vec![
-                "repository:read".to_string(),
-                "document:create".to_string(),
-                "verification:execute".to_string(),
-            ])
+                "paths": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Documentation paths to verify (default: README.md, docs/)",
+                    "default": ["README.md", "docs/"]
+                },
+                "check_code_examples": {
+                    "type": "boolean",
+                    "description": "Verify that code examples are accurate",
+                    "default": true
+                },
+                "check_api_docs": {
+                    "type": "boolean",
+                    "description": "Verify API documentation against actual implementation",
+                    "default": true
+                },
+                "compare_to_code": {
+                    "type": "boolean",
+                    "description": "Cross-reference documentation claims with codebase",
+                    "default": true
+                }
+            },
+            "required": ["repository_id"]
+        }))
+        .with_permissions(vec![
+            "repository:read".to_string(),
+            "document:create".to_string(),
+            "verification:execute".to_string(),
+        ])
     }
 
     #[instrument(skip(self, context), fields(tool = "verify_documentation"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: VerifyDocumentationParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
-        info!("Starting documentation verification for repository: {}", params.repository_id);
+        info!(
+            "Starting documentation verification for repository: {}",
+            params.repository_id
+        );
 
         let shipcheck = get_shipcheck_client();
         let verity = get_verity_client();
 
         // Step 1: Fetch documentation from ShipCheck
-        debug!("Fetching documentation from ShipCheck for paths: {:?}", params.paths);
-        let repo_docs = match shipcheck.get_repository_docs(&params.repository_id, &params.paths).await {
+        debug!(
+            "Fetching documentation from ShipCheck for paths: {:?}",
+            params.paths
+        );
+        let repo_docs = match shipcheck
+            .get_repository_docs(&params.repository_id, &params.paths)
+            .await
+        {
             Ok(docs) => docs,
             Err(e) => {
                 error!("Failed to fetch documentation: {}", e);
-                return Ok(ToolResult::error(format!("Failed to fetch documentation: {}", e)));
+                return Ok(ToolResult::error(format!(
+                    "Failed to fetch documentation: {}",
+                    e
+                )));
             }
         };
 
@@ -449,7 +494,10 @@ impl Tool for VerifyDocumentationTool {
             match verity.verify_content(verify_params).await {
                 Ok(response) => {
                     verification_ids.push(response.verification_id.clone());
-                    info!("Verification started for {}: {}", doc_file.path, response.verification_id);
+                    info!(
+                        "Verification started for {}: {}",
+                        doc_file.path, response.verification_id
+                    );
                 }
                 Err(e) => {
                     error!("Failed to verify {}: {}", doc_file.path, e);
@@ -510,53 +558,57 @@ impl Tool for CreateFindingDiscussionTool {
     fn definition(&self) -> ToolDefinition {
         ToolDefinition::new(
             "workflow_create_finding_discussion",
-            "Create a discussion topic from a code finding for team review"
+            "Create a discussion topic from a code finding for team review",
         )
-            .with_app(App::Shared)
-            .with_category("workflow")
-            .with_schema(serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "finding_id": {
-                        "type": "string",
-                        "description": "ShipCheck finding ID"
-                    },
-                    "meeting_id": {
-                        "type": "string",
-                        "description": "NoteMan meeting ID to add agenda item to (optional)"
-                    },
-                    "workspace_id": {
-                        "type": "string",
-                        "description": "NoteMan workspace ID for the discussion"
-                    },
-                    "priority": {
-                        "type": "string",
-                        "enum": ["low", "medium", "high", "critical"],
-                        "description": "Discussion priority",
-                        "default": "medium"
-                    },
-                    "assign_to": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "User IDs or emails to assign"
-                    },
-                    "include_context": {
-                        "type": "boolean",
-                        "description": "Include code context in the discussion",
-                        "default": true
-                    }
+        .with_app(App::Shared)
+        .with_category("workflow")
+        .with_schema(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "finding_id": {
+                    "type": "string",
+                    "description": "ShipCheck finding ID"
                 },
-                "required": ["finding_id"]
-            }))
-            .with_permissions(vec![
-                "code_finding:read".to_string(),
-                "workspace:read".to_string(),
-                "note:create".to_string(),
-            ])
+                "meeting_id": {
+                    "type": "string",
+                    "description": "NoteMan meeting ID to add agenda item to (optional)"
+                },
+                "workspace_id": {
+                    "type": "string",
+                    "description": "NoteMan workspace ID for the discussion"
+                },
+                "priority": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high", "critical"],
+                    "description": "Discussion priority",
+                    "default": "medium"
+                },
+                "assign_to": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "User IDs or emails to assign"
+                },
+                "include_context": {
+                    "type": "boolean",
+                    "description": "Include code context in the discussion",
+                    "default": true
+                }
+            },
+            "required": ["finding_id"]
+        }))
+        .with_permissions(vec![
+            "code_finding:read".to_string(),
+            "workspace:read".to_string(),
+            "note:create".to_string(),
+        ])
     }
 
     #[instrument(skip(self, context), fields(tool = "create_finding_discussion"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: CreateFindingDiscussionParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
@@ -590,10 +642,7 @@ impl Tool for CreateFindingDiscussionTool {
         } else {
             format!(
                 "## Code Finding: {}\n\n**Severity:** {}\n**File:** {}\n\n{}",
-                finding.title,
-                finding.severity,
-                finding.file_path,
-                finding.description
+                finding.title, finding.severity, finding.file_path, finding.description
             )
         };
 
@@ -630,7 +679,10 @@ impl Tool for CreateFindingDiscussionTool {
             }
             Err(e) => {
                 error!("Failed to create discussion: {}", e);
-                Ok(ToolResult::error(format!("Failed to create discussion: {}", e)))
+                Ok(ToolResult::error(format!(
+                    "Failed to create discussion: {}",
+                    e
+                )))
             }
         }
     }
@@ -669,74 +721,85 @@ impl Tool for SyncActionItemsToTasksTool {
     fn definition(&self) -> ToolDefinition {
         ToolDefinition::new(
             "workflow_sync_action_items",
-            "Sync meeting action items to ShipCheck repository tasks"
+            "Sync meeting action items to ShipCheck repository tasks",
         )
-            .with_app(App::Shared)
-            .with_category("workflow")
-            .with_schema(serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "meeting_id": {
-                        "type": "string",
-                        "description": "NoteMan meeting ID"
-                    },
-                    "repository_id": {
-                        "type": "string",
-                        "description": "Target ShipCheck repository"
-                    },
-                    "action_item_ids": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Specific action item IDs (default: all code-related items)"
-                    },
-                    "create_issues": {
-                        "type": "boolean",
-                        "description": "Create GitHub issues for tasks",
-                        "default": true
-                    },
-                    "link_to_prs": {
-                        "type": "boolean",
-                        "description": "Auto-link to related PRs when resolved",
-                        "default": true
-                    },
-                    "default_labels": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Default labels for created issues"
-                    }
+        .with_app(App::Shared)
+        .with_category("workflow")
+        .with_schema(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "meeting_id": {
+                    "type": "string",
+                    "description": "NoteMan meeting ID"
                 },
-                "required": ["meeting_id", "repository_id"]
-            }))
-            .with_permissions(vec![
-                "meeting:read".to_string(),
-                "meeting_task:read".to_string(),
-                "repository:update".to_string(),
-            ])
+                "repository_id": {
+                    "type": "string",
+                    "description": "Target ShipCheck repository"
+                },
+                "action_item_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Specific action item IDs (default: all code-related items)"
+                },
+                "create_issues": {
+                    "type": "boolean",
+                    "description": "Create GitHub issues for tasks",
+                    "default": true
+                },
+                "link_to_prs": {
+                    "type": "boolean",
+                    "description": "Auto-link to related PRs when resolved",
+                    "default": true
+                },
+                "default_labels": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Default labels for created issues"
+                }
+            },
+            "required": ["meeting_id", "repository_id"]
+        }))
+        .with_permissions(vec![
+            "meeting:read".to_string(),
+            "meeting_task:read".to_string(),
+            "repository:update".to_string(),
+        ])
     }
 
     #[instrument(skip(self, context), fields(tool = "sync_action_items"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: SyncActionItemsParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
-        info!("Syncing action items from meeting {} to repository {}", params.meeting_id, params.repository_id);
+        info!(
+            "Syncing action items from meeting {} to repository {}",
+            params.meeting_id, params.repository_id
+        );
 
         let noteman = get_noteman_client();
         let shipcheck = get_shipcheck_client();
 
         // Step 1: Extract action items from NoteMan
         debug!("Extracting action items from meeting {}", params.meeting_id);
-        let extract_response = match noteman.extract_action_items(
-            crate::clients::noteman::ExtractActionItemsParams {
+        let extract_response = match noteman
+            .extract_action_items(crate::clients::noteman::ExtractActionItemsParams {
                 meeting_id: params.meeting_id.clone(),
                 auto_assign: true,
                 create_tasks: false, // We'll create tasks in ShipCheck instead
-            }
-        ).await {
+            })
+            .await
+        {
             Ok(r) => r,
             Err(e) => {
                 error!("Failed to extract action items: {}", e);
-                return Ok(ToolResult::error(format!("Failed to extract action items: {}", e)));
+                return Ok(ToolResult::error(format!(
+                    "Failed to extract action items: {}",
+                    e
+                )));
             }
         };
 
@@ -744,7 +807,9 @@ impl Tool for SyncActionItemsToTasksTool {
         let action_items: Vec<_> = if params.action_item_ids.is_empty() {
             extract_response.action_items.iter().collect()
         } else {
-            extract_response.action_items.iter()
+            extract_response
+                .action_items
+                .iter()
                 .filter(|item| params.action_item_ids.contains(&item.id))
                 .collect()
         };
@@ -765,12 +830,15 @@ impl Tool for SyncActionItemsToTasksTool {
         let sync_params = ClientSyncParams {
             repository_id: params.repository_id.clone(),
             meeting_id: params.meeting_id.clone(),
-            action_items: action_items.iter().map(|item| ActionItemSync {
-                id: item.id.clone(),
-                description: item.description.clone(),
-                assignee: item.assignee.clone(),
-                due_date: item.due_date.clone(),
-            }).collect(),
+            action_items: action_items
+                .iter()
+                .map(|item| ActionItemSync {
+                    id: item.id.clone(),
+                    description: item.description.clone(),
+                    assignee: item.assignee.clone(),
+                    due_date: item.due_date.clone(),
+                })
+                .collect(),
             create_issues: params.create_issues,
             link_to_prs: params.link_to_prs,
             default_labels: params.default_labels.clone(),
@@ -778,7 +846,10 @@ impl Tool for SyncActionItemsToTasksTool {
 
         match shipcheck.sync_tasks(sync_params).await {
             Ok(response) => {
-                info!("Synced {} items, created {} issues", response.items_synced, response.issues_created);
+                info!(
+                    "Synced {} items, created {} issues",
+                    response.items_synced, response.issues_created
+                );
 
                 Ok(ToolResult::json(serde_json::json!({
                     "meeting_id": params.meeting_id,
@@ -851,8 +922,11 @@ mod tests {
         for tool in tools {
             let def = tool.definition();
             // All workflow tools should have permissions from multiple apps
-            assert!(!def.required_permissions.is_empty(),
-                "Tool {} should have required permissions", def.name);
+            assert!(
+                !def.required_permissions.is_empty(),
+                "Tool {} should have required permissions",
+                def.name
+            );
         }
     }
 

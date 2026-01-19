@@ -6,11 +6,9 @@
 
 use crate::clients::config::ServiceConfig;
 use crate::clients::noteman::{
-    NoteManClient, TranscribeMeetingParams as ClientTranscribeParams,
-    SummarizeMeetingParams as ClientSummarizeParams,
-    ExtractActionItemsParams as ClientExtractParams,
-    SearchMeetingsParams as ClientSearchParams,
-    DateRange,
+    DateRange, ExtractActionItemsParams as ClientExtractParams, NoteManClient,
+    SearchMeetingsParams as ClientSearchParams, SummarizeMeetingParams as ClientSummarizeParams,
+    TranscribeMeetingParams as ClientTranscribeParams,
 };
 use crate::server::{McpServerError, McpServerResult, Tool, ToolContext};
 use crate::types::{ToolDefinition, ToolResult};
@@ -41,34 +39,44 @@ pub struct TranscribeMeetingTool;
 #[async_trait]
 impl Tool for TranscribeMeetingTool {
     fn definition(&self) -> ToolDefinition {
-        ToolDefinition::new("noteman_transcribe_meeting", "Transcribe a meeting from audio/video")
-            .with_app(App::NoteMan)
-            .with_category("transcription")
-            .with_schema(serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "meeting_id": {
-                        "type": "string",
-                        "description": "The meeting ID to transcribe"
-                    },
-                    "language": {
-                        "type": "string",
-                        "description": "Language code (e.g., 'en', 'es', 'fr')",
-                        "default": "en"
-                    },
-                    "speaker_diarization": {
-                        "type": "boolean",
-                        "description": "Whether to identify different speakers",
-                        "default": true
-                    }
+        ToolDefinition::new(
+            "noteman_transcribe_meeting",
+            "Transcribe a meeting from audio/video",
+        )
+        .with_app(App::NoteMan)
+        .with_category("transcription")
+        .with_schema(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "meeting_id": {
+                    "type": "string",
+                    "description": "The meeting ID to transcribe"
                 },
-                "required": ["meeting_id"]
-            }))
-            .with_permissions(vec!["meeting:read".to_string(), "transcript:create".to_string()])
+                "language": {
+                    "type": "string",
+                    "description": "Language code (e.g., 'en', 'es', 'fr')",
+                    "default": "en"
+                },
+                "speaker_diarization": {
+                    "type": "boolean",
+                    "description": "Whether to identify different speakers",
+                    "default": true
+                }
+            },
+            "required": ["meeting_id"]
+        }))
+        .with_permissions(vec![
+            "meeting:read".to_string(),
+            "transcript:create".to_string(),
+        ])
     }
 
     #[instrument(skip(self, context), fields(tool = "transcribe_meeting"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: TranscribeMeetingParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
@@ -83,19 +91,20 @@ impl Tool for TranscribeMeetingTool {
         };
 
         match client.transcribe_meeting(client_params).await {
-            Ok(response) => {
-                Ok(ToolResult::json(serde_json::json!({
-                    "meeting_id": response.meeting_id,
-                    "job_id": response.job_id,
-                    "status": response.status,
-                    "language": response.language,
-                    "speaker_diarization": response.speaker_diarization,
-                    "message": "Transcription job started successfully"
-                })))
-            }
+            Ok(response) => Ok(ToolResult::json(serde_json::json!({
+                "meeting_id": response.meeting_id,
+                "job_id": response.job_id,
+                "status": response.status,
+                "language": response.language,
+                "speaker_diarization": response.speaker_diarization,
+                "message": "Transcription job started successfully"
+            }))),
             Err(e) => {
                 error!("Failed to transcribe meeting: {}", e);
-                Ok(ToolResult::error(format!("Failed to transcribe meeting: {}", e)))
+                Ok(ToolResult::error(format!(
+                    "Failed to transcribe meeting: {}",
+                    e
+                )))
             }
         }
     }
@@ -127,40 +136,50 @@ pub struct SummarizeMeetingTool;
 #[async_trait]
 impl Tool for SummarizeMeetingTool {
     fn definition(&self) -> ToolDefinition {
-        ToolDefinition::new("noteman_summarize_meeting", "Generate a summary of a meeting")
-            .with_app(App::NoteMan)
-            .with_category("summarization")
-            .with_schema(serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "meeting_id": {
-                        "type": "string",
-                        "description": "The meeting ID to summarize"
-                    },
-                    "format": {
-                        "type": "string",
-                        "enum": ["bullet_points", "narrative", "structured"],
-                        "description": "Summary format",
-                        "default": "structured"
-                    },
-                    "include_decisions": {
-                        "type": "boolean",
-                        "description": "Include decisions made in the meeting",
-                        "default": true
-                    },
-                    "include_action_items": {
-                        "type": "boolean",
-                        "description": "Include action items",
-                        "default": true
-                    }
+        ToolDefinition::new(
+            "noteman_summarize_meeting",
+            "Generate a summary of a meeting",
+        )
+        .with_app(App::NoteMan)
+        .with_category("summarization")
+        .with_schema(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "meeting_id": {
+                    "type": "string",
+                    "description": "The meeting ID to summarize"
                 },
-                "required": ["meeting_id"]
-            }))
-            .with_permissions(vec!["meeting:read".to_string(), "meeting_summary:create".to_string()])
+                "format": {
+                    "type": "string",
+                    "enum": ["bullet_points", "narrative", "structured"],
+                    "description": "Summary format",
+                    "default": "structured"
+                },
+                "include_decisions": {
+                    "type": "boolean",
+                    "description": "Include decisions made in the meeting",
+                    "default": true
+                },
+                "include_action_items": {
+                    "type": "boolean",
+                    "description": "Include action items",
+                    "default": true
+                }
+            },
+            "required": ["meeting_id"]
+        }))
+        .with_permissions(vec![
+            "meeting:read".to_string(),
+            "meeting_summary:create".to_string(),
+        ])
     }
 
     #[instrument(skip(self, context), fields(tool = "summarize_meeting"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: SummarizeMeetingParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
@@ -176,22 +195,23 @@ impl Tool for SummarizeMeetingTool {
         };
 
         match client.summarize_meeting(client_params).await {
-            Ok(response) => {
-                Ok(ToolResult::json(serde_json::json!({
-                    "meeting_id": response.meeting_id,
-                    "status": response.status,
-                    "format": response.format,
-                    "summary": {
-                        "key_points": response.summary.key_points,
-                        "decisions": response.summary.decisions,
-                        "action_items": response.summary.action_items,
-                        "full_text": response.summary.full_text
-                    }
-                })))
-            }
+            Ok(response) => Ok(ToolResult::json(serde_json::json!({
+                "meeting_id": response.meeting_id,
+                "status": response.status,
+                "format": response.format,
+                "summary": {
+                    "key_points": response.summary.key_points,
+                    "decisions": response.summary.decisions,
+                    "action_items": response.summary.action_items,
+                    "full_text": response.summary.full_text
+                }
+            }))),
             Err(e) => {
                 error!("Failed to summarize meeting: {}", e);
-                Ok(ToolResult::error(format!("Failed to summarize meeting: {}", e)))
+                Ok(ToolResult::error(format!(
+                    "Failed to summarize meeting: {}",
+                    e
+                )))
             }
         }
     }
@@ -221,38 +241,51 @@ pub struct ExtractActionItemsTool;
 #[async_trait]
 impl Tool for ExtractActionItemsTool {
     fn definition(&self) -> ToolDefinition {
-        ToolDefinition::new("noteman_extract_action_items", "Extract action items from a meeting")
-            .with_app(App::NoteMan)
-            .with_category("extraction")
-            .with_schema(serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "meeting_id": {
-                        "type": "string",
-                        "description": "The meeting ID to extract from"
-                    },
-                    "auto_assign": {
-                        "type": "boolean",
-                        "description": "Automatically assign items based on context",
-                        "default": true
-                    },
-                    "create_tasks": {
-                        "type": "boolean",
-                        "description": "Create tasks in connected project management tools",
-                        "default": false
-                    }
+        ToolDefinition::new(
+            "noteman_extract_action_items",
+            "Extract action items from a meeting",
+        )
+        .with_app(App::NoteMan)
+        .with_category("extraction")
+        .with_schema(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "meeting_id": {
+                    "type": "string",
+                    "description": "The meeting ID to extract from"
                 },
-                "required": ["meeting_id"]
-            }))
-            .with_permissions(vec!["meeting:read".to_string(), "meeting_task:create".to_string()])
+                "auto_assign": {
+                    "type": "boolean",
+                    "description": "Automatically assign items based on context",
+                    "default": true
+                },
+                "create_tasks": {
+                    "type": "boolean",
+                    "description": "Create tasks in connected project management tools",
+                    "default": false
+                }
+            },
+            "required": ["meeting_id"]
+        }))
+        .with_permissions(vec![
+            "meeting:read".to_string(),
+            "meeting_task:create".to_string(),
+        ])
     }
 
     #[instrument(skip(self, context), fields(tool = "extract_action_items"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: ExtractActionItemsParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
-        debug!("Extracting action items from meeting: {}", params.meeting_id);
+        debug!(
+            "Extracting action items from meeting: {}",
+            params.meeting_id
+        );
 
         let client = get_client();
 
@@ -263,17 +296,18 @@ impl Tool for ExtractActionItemsTool {
         };
 
         match client.extract_action_items(client_params).await {
-            Ok(response) => {
-                Ok(ToolResult::json(serde_json::json!({
-                    "meeting_id": response.meeting_id,
-                    "status": response.status,
-                    "action_items": response.action_items,
-                    "tasks_created": response.tasks_created
-                })))
-            }
+            Ok(response) => Ok(ToolResult::json(serde_json::json!({
+                "meeting_id": response.meeting_id,
+                "status": response.status,
+                "action_items": response.action_items,
+                "tasks_created": response.tasks_created
+            }))),
             Err(e) => {
                 error!("Failed to extract action items: {}", e);
-                Ok(ToolResult::error(format!("Failed to extract action items: {}", e)))
+                Ok(ToolResult::error(format!(
+                    "Failed to extract action items: {}",
+                    e
+                )))
             }
         }
     }
@@ -331,7 +365,11 @@ impl Tool for SearchMeetingsTool {
     }
 
     #[instrument(skip(self, context), fields(tool = "search_meetings"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: SearchMeetingsParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
@@ -340,17 +378,15 @@ impl Tool for SearchMeetingsTool {
         let client = get_client();
 
         // Convert date range if provided
-        let date_range = params.date_range.and_then(|dr| {
-            match (dr.get("start"), dr.get("end")) {
-                (Some(start), Some(end)) => {
-                    Some(DateRange {
-                        start: start.as_str().unwrap_or_default().to_string(),
-                        end: end.as_str().unwrap_or_default().to_string(),
-                    })
-                }
-                _ => None
-            }
-        });
+        let date_range = params
+            .date_range
+            .and_then(|dr| match (dr.get("start"), dr.get("end")) {
+                (Some(start), Some(end)) => Some(DateRange {
+                    start: start.as_str().unwrap_or_default().to_string(),
+                    end: end.as_str().unwrap_or_default().to_string(),
+                }),
+                _ => None,
+            });
 
         let client_params = ClientSearchParams {
             query: params.query.clone(),
@@ -360,16 +396,17 @@ impl Tool for SearchMeetingsTool {
         };
 
         match client.search_meetings(client_params).await {
-            Ok(response) => {
-                Ok(ToolResult::json(serde_json::json!({
-                    "query": response.query,
-                    "total_results": response.total_results,
-                    "meetings": response.meetings
-                })))
-            }
+            Ok(response) => Ok(ToolResult::json(serde_json::json!({
+                "query": response.query,
+                "total_results": response.total_results,
+                "meetings": response.meetings
+            }))),
             Err(e) => {
                 error!("Failed to search meetings: {}", e);
-                Ok(ToolResult::error(format!("Failed to search meetings: {}", e)))
+                Ok(ToolResult::error(format!(
+                    "Failed to search meetings: {}",
+                    e
+                )))
             }
         }
     }
@@ -423,7 +460,8 @@ mod tests {
     #[test]
     fn test_tool_categories() {
         let tools = noteman_tools();
-        let categories: Vec<_> = tools.iter()
+        let categories: Vec<_> = tools
+            .iter()
             .map(|t| t.definition().category.clone())
             .collect();
 

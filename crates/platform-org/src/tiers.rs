@@ -102,11 +102,7 @@ impl Tier {
                 api_requests_per_day: Some(1000),
                 integrations: Some(5),
                 ai_queries_per_month: Some(1000),
-                export_formats: vec![
-                    "pdf".to_string(),
-                    "docx".to_string(),
-                    "json".to_string(),
-                ],
+                export_formats: vec!["pdf".to_string(), "docx".to_string(), "json".to_string()],
                 support_level: SupportLevel::Email,
                 sso_enabled: false,
                 audit_log_days: 30,

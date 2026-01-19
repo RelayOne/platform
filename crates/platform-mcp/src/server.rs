@@ -46,7 +46,11 @@ pub trait Tool: Send + Sync {
     fn definition(&self) -> ToolDefinition;
 
     /// Execute the tool with given arguments.
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult>;
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult>;
 }
 
 /// Context for tool execution.
@@ -261,7 +265,11 @@ impl McpServer {
         McpResponse::success(id, serde_json::json!({ "tools": tools }))
     }
 
-    async fn handle_tools_call(&self, id: RequestId, params: Option<serde_json::Value>) -> McpResponse {
+    async fn handle_tools_call(
+        &self,
+        id: RequestId,
+        params: Option<serde_json::Value>,
+    ) -> McpResponse {
         let params = match params {
             Some(p) => p,
             None => return McpResponse::error(id, McpError::invalid_params("Missing params")),
@@ -326,7 +334,10 @@ where
 {
     /// Create a new function-based tool.
     pub fn new(definition: ToolDefinition, handler: F) -> Self {
-        Self { definition, handler }
+        Self {
+            definition,
+            handler,
+        }
     }
 }
 
@@ -339,7 +350,11 @@ where
         self.definition.clone()
     }
 
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         (self.handler)(args, context)
     }
 }
@@ -358,7 +373,11 @@ mod tests {
                 .with_category("test")
         }
 
-        async fn execute(&self, _args: serde_json::Value, _context: &ToolContext) -> McpServerResult<ToolResult> {
+        async fn execute(
+            &self,
+            _args: serde_json::Value,
+            _context: &ToolContext,
+        ) -> McpServerResult<ToolResult> {
             Ok(ToolResult::text("Test result"))
         }
     }
@@ -385,7 +404,9 @@ mod tests {
         server.register_tool(Arc::new(TestTool)).await;
 
         let context = ToolContext::empty();
-        let result = server.call_tool("test_tool", serde_json::json!({}), &context).await;
+        let result = server
+            .call_tool("test_tool", serde_json::json!({}), &context)
+            .await;
 
         assert!(result.is_ok());
         let result = result.unwrap();

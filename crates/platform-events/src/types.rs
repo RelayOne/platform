@@ -191,10 +191,7 @@ pub enum DocumentEvent {
         assertion_count: u32,
     },
     /// Document verification failed
-    VerificationFailed {
-        document_id: Uuid,
-        error: String,
-    },
+    VerificationFailed { document_id: Uuid, error: String },
 }
 
 impl DocumentEvent {
@@ -228,10 +225,7 @@ pub enum AssertionEvent {
         confidence: f64,
     },
     /// Assertion needs remediation
-    NeedsRemediation {
-        assertion_id: Uuid,
-        reason: String,
-    },
+    NeedsRemediation { assertion_id: Uuid, reason: String },
     /// Assertion was remediated
     Remediated {
         assertion_id: Uuid,
@@ -314,7 +308,11 @@ impl MeetingEvent {
             MeetingEvent::ActionItemsExtracted { .. } => "meeting.action_items_extracted",
             MeetingEvent::DecisionRecorded { .. } => "meeting.decision_recorded",
         };
-        Event::new(event_type, App::NoteMan, serde_json::to_value(self).unwrap())
+        Event::new(
+            event_type,
+            App::NoteMan,
+            serde_json::to_value(self).unwrap(),
+        )
     }
 }
 
@@ -379,7 +377,11 @@ impl RepositoryEvent {
             RepositoryEvent::FindingResolved { .. } => "repository.finding_resolved",
             RepositoryEvent::PrReviewCompleted { .. } => "repository.pr_review_completed",
         };
-        Event::new(event_type, App::ShipCheck, serde_json::to_value(self).unwrap())
+        Event::new(
+            event_type,
+            App::ShipCheck,
+            serde_json::to_value(self).unwrap(),
+        )
     }
 }
 
@@ -442,9 +444,10 @@ impl CrossAppEvent {
             CrossAppEvent::CodeFindingForDiscussion { .. } => {
                 ("cross_app.code_finding_for_discussion", App::ShipCheck)
             }
-            CrossAppEvent::DocumentationVerificationRequest { .. } => {
-                ("cross_app.documentation_verification_request", App::ShipCheck)
-            }
+            CrossAppEvent::DocumentationVerificationRequest { .. } => (
+                "cross_app.documentation_verification_request",
+                App::ShipCheck,
+            ),
         };
         Event::new(event_type, source, serde_json::to_value(self).unwrap())
     }

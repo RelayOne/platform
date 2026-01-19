@@ -6,10 +6,9 @@
 
 use crate::clients::config::ServiceConfig;
 use crate::clients::shipcheck::{
-    ShipCheckClient, AnalyzeCodeParams as ClientAnalyzeParams,
+    AnalyzeCodeParams as ClientAnalyzeParams, RunPipelineParams as ClientPipelineParams,
+    SearchFindingsParams as ClientSearchParams, ShipCheckClient,
     VerifyPRParams as ClientVerifyPRParams,
-    SearchFindingsParams as ClientSearchParams,
-    RunPipelineParams as ClientPipelineParams,
 };
 use crate::server::{McpServerError, McpServerResult, Tool, ToolContext};
 use crate::types::{ToolDefinition, ToolResult};
@@ -40,40 +39,50 @@ pub struct AnalyzeCodeTool;
 #[async_trait]
 impl Tool for AnalyzeCodeTool {
     fn definition(&self) -> ToolDefinition {
-        ToolDefinition::new("shipcheck_analyze_code", "Analyze code for bugs, security issues, and style problems")
-            .with_app(App::ShipCheck)
-            .with_category("analysis")
-            .with_schema(serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "repository_id": {
-                        "type": "string",
-                        "description": "The repository ID to analyze"
-                    },
-                    "path": {
-                        "type": "string",
-                        "description": "Path within the repository to analyze (default: entire repo)"
-                    },
-                    "commit": {
-                        "type": "string",
-                        "description": "Specific commit SHA to analyze"
-                    },
-                    "checks": {
-                        "type": "array",
-                        "items": {
-                            "type": "string",
-                            "enum": ["security", "bugs", "style", "performance", "complexity"]
-                        },
-                        "description": "Types of checks to run"
-                    }
+        ToolDefinition::new(
+            "shipcheck_analyze_code",
+            "Analyze code for bugs, security issues, and style problems",
+        )
+        .with_app(App::ShipCheck)
+        .with_category("analysis")
+        .with_schema(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "repository_id": {
+                    "type": "string",
+                    "description": "The repository ID to analyze"
                 },
-                "required": ["repository_id"]
-            }))
-            .with_permissions(vec!["repository:read".to_string(), "code_verification:execute".to_string()])
+                "path": {
+                    "type": "string",
+                    "description": "Path within the repository to analyze (default: entire repo)"
+                },
+                "commit": {
+                    "type": "string",
+                    "description": "Specific commit SHA to analyze"
+                },
+                "checks": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["security", "bugs", "style", "performance", "complexity"]
+                    },
+                    "description": "Types of checks to run"
+                }
+            },
+            "required": ["repository_id"]
+        }))
+        .with_permissions(vec![
+            "repository:read".to_string(),
+            "code_verification:execute".to_string(),
+        ])
     }
 
     #[instrument(skip(self, context), fields(tool = "analyze_code"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: AnalyzeCodeParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
@@ -89,17 +98,15 @@ impl Tool for AnalyzeCodeTool {
         };
 
         match client.analyze_code(client_params).await {
-            Ok(response) => {
-                Ok(ToolResult::json(serde_json::json!({
-                    "repository_id": response.repository_id,
-                    "job_id": response.job_id,
-                    "status": response.status,
-                    "path": response.path,
-                    "checks": response.checks,
-                    "commit": response.commit,
-                    "message": "Code analysis job started successfully"
-                })))
-            }
+            Ok(response) => Ok(ToolResult::json(serde_json::json!({
+                "repository_id": response.repository_id,
+                "job_id": response.job_id,
+                "status": response.status,
+                "path": response.path,
+                "checks": response.checks,
+                "commit": response.commit,
+                "message": "Code analysis job started successfully"
+            }))),
             Err(e) => {
                 error!("Failed to analyze code: {}", e);
                 Ok(ToolResult::error(format!("Failed to analyze code: {}", e)))
@@ -130,46 +137,56 @@ pub struct VerifyPRTool;
 #[async_trait]
 impl Tool for VerifyPRTool {
     fn definition(&self) -> ToolDefinition {
-        ToolDefinition::new("shipcheck_verify_pr", "Verify a pull request for code quality and security")
-            .with_app(App::ShipCheck)
-            .with_category("verification")
-            .with_schema(serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "repository_id": {
-                        "type": "string",
-                        "description": "The repository ID"
-                    },
-                    "pr_number": {
-                        "type": "integer",
-                        "description": "The pull request number"
-                    },
-                    "auto_approve": {
-                        "type": "boolean",
-                        "description": "Automatically approve if all checks pass",
-                        "default": false
-                    },
-                    "post_comments": {
-                        "type": "boolean",
-                        "description": "Post inline comments on issues found",
-                        "default": true
-                    }
+        ToolDefinition::new(
+            "shipcheck_verify_pr",
+            "Verify a pull request for code quality and security",
+        )
+        .with_app(App::ShipCheck)
+        .with_category("verification")
+        .with_schema(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "repository_id": {
+                    "type": "string",
+                    "description": "The repository ID"
                 },
-                "required": ["repository_id", "pr_number"]
-            }))
-            .with_permissions(vec![
-                "repository:read".to_string(),
-                "pull_request:read".to_string(),
-                "pull_request:update".to_string(),
-            ])
+                "pr_number": {
+                    "type": "integer",
+                    "description": "The pull request number"
+                },
+                "auto_approve": {
+                    "type": "boolean",
+                    "description": "Automatically approve if all checks pass",
+                    "default": false
+                },
+                "post_comments": {
+                    "type": "boolean",
+                    "description": "Post inline comments on issues found",
+                    "default": true
+                }
+            },
+            "required": ["repository_id", "pr_number"]
+        }))
+        .with_permissions(vec![
+            "repository:read".to_string(),
+            "pull_request:read".to_string(),
+            "pull_request:update".to_string(),
+        ])
     }
 
     #[instrument(skip(self, context), fields(tool = "verify_pr"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: VerifyPRParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
-        debug!("Verifying PR #{} for repository: {}", params.pr_number, params.repository_id);
+        debug!(
+            "Verifying PR #{} for repository: {}",
+            params.pr_number, params.repository_id
+        );
 
         let client = get_client();
 
@@ -181,17 +198,15 @@ impl Tool for VerifyPRTool {
         };
 
         match client.verify_pr(client_params).await {
-            Ok(response) => {
-                Ok(ToolResult::json(serde_json::json!({
-                    "repository_id": response.repository_id,
-                    "pr_number": response.pr_number,
-                    "job_id": response.job_id,
-                    "status": response.status,
-                    "auto_approve": response.auto_approve,
-                    "findings_count": response.findings_count,
-                    "message": "PR verification job started successfully"
-                })))
-            }
+            Ok(response) => Ok(ToolResult::json(serde_json::json!({
+                "repository_id": response.repository_id,
+                "pr_number": response.pr_number,
+                "job_id": response.job_id,
+                "status": response.status,
+                "auto_approve": response.auto_approve,
+                "findings_count": response.findings_count,
+                "message": "PR verification job started successfully"
+            }))),
             Err(e) => {
                 error!("Failed to verify PR: {}", e);
                 Ok(ToolResult::error(format!("Failed to verify PR: {}", e)))
@@ -261,7 +276,11 @@ impl Tool for SearchFindingsTool {
     }
 
     #[instrument(skip(self, context), fields(tool = "search_findings"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: SearchFindingsParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
@@ -278,16 +297,17 @@ impl Tool for SearchFindingsTool {
         };
 
         match client.search_findings(client_params).await {
-            Ok(response) => {
-                Ok(ToolResult::json(serde_json::json!({
-                    "query": response.query,
-                    "total_results": response.total_results,
-                    "findings": response.findings
-                })))
-            }
+            Ok(response) => Ok(ToolResult::json(serde_json::json!({
+                "query": response.query,
+                "total_results": response.total_results,
+                "findings": response.findings
+            }))),
             Err(e) => {
                 error!("Failed to search findings: {}", e);
-                Ok(ToolResult::error(format!("Failed to search findings: {}", e)))
+                Ok(ToolResult::error(format!(
+                    "Failed to search findings: {}",
+                    e
+                )))
             }
         }
     }
@@ -317,39 +337,49 @@ pub struct RunPipelineTool;
 #[async_trait]
 impl Tool for RunPipelineTool {
     fn definition(&self) -> ToolDefinition {
-        ToolDefinition::new("shipcheck_run_pipeline", "Run a verification pipeline on a repository")
-            .with_app(App::ShipCheck)
-            .with_category("pipeline")
-            .with_schema(serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "repository_id": {
-                        "type": "string",
-                        "description": "The repository ID"
-                    },
-                    "branch": {
-                        "type": "string",
-                        "description": "Branch to run on (default: main/master)"
-                    },
-                    "pipeline": {
-                        "type": "string",
-                        "enum": ["full", "security", "quality", "custom"],
-                        "description": "Pipeline type to run",
-                        "default": "full"
-                    },
-                    "notify_on_complete": {
-                        "type": "boolean",
-                        "description": "Send notification when complete",
-                        "default": true
-                    }
+        ToolDefinition::new(
+            "shipcheck_run_pipeline",
+            "Run a verification pipeline on a repository",
+        )
+        .with_app(App::ShipCheck)
+        .with_category("pipeline")
+        .with_schema(serde_json::json!({
+            "type": "object",
+            "properties": {
+                "repository_id": {
+                    "type": "string",
+                    "description": "The repository ID"
                 },
-                "required": ["repository_id"]
-            }))
-            .with_permissions(vec!["repository:read".to_string(), "pipeline:execute".to_string()])
+                "branch": {
+                    "type": "string",
+                    "description": "Branch to run on (default: main/master)"
+                },
+                "pipeline": {
+                    "type": "string",
+                    "enum": ["full", "security", "quality", "custom"],
+                    "description": "Pipeline type to run",
+                    "default": "full"
+                },
+                "notify_on_complete": {
+                    "type": "boolean",
+                    "description": "Send notification when complete",
+                    "default": true
+                }
+            },
+            "required": ["repository_id"]
+        }))
+        .with_permissions(vec![
+            "repository:read".to_string(),
+            "pipeline:execute".to_string(),
+        ])
     }
 
     #[instrument(skip(self, context), fields(tool = "run_pipeline"))]
-    async fn execute(&self, args: serde_json::Value, context: &ToolContext) -> McpServerResult<ToolResult> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+        context: &ToolContext,
+    ) -> McpServerResult<ToolResult> {
         let params: RunPipelineParams = serde_json::from_value(args)
             .map_err(|e| McpServerError::InvalidParams(e.to_string()))?;
 
@@ -365,16 +395,14 @@ impl Tool for RunPipelineTool {
         };
 
         match client.run_pipeline(client_params).await {
-            Ok(response) => {
-                Ok(ToolResult::json(serde_json::json!({
-                    "repository_id": response.repository_id,
-                    "pipeline_id": response.pipeline_id,
-                    "status": response.status,
-                    "branch": response.branch,
-                    "pipeline": response.pipeline,
-                    "message": "Pipeline started successfully"
-                })))
-            }
+            Ok(response) => Ok(ToolResult::json(serde_json::json!({
+                "repository_id": response.repository_id,
+                "pipeline_id": response.pipeline_id,
+                "status": response.status,
+                "branch": response.branch,
+                "pipeline": response.pipeline,
+                "message": "Pipeline started successfully"
+            }))),
             Err(e) => {
                 error!("Failed to run pipeline: {}", e);
                 Ok(ToolResult::error(format!("Failed to run pipeline: {}", e)))
@@ -431,7 +459,8 @@ mod tests {
     #[test]
     fn test_tool_categories() {
         let tools = shipcheck_tools();
-        let categories: Vec<_> = tools.iter()
+        let categories: Vec<_> = tools
+            .iter()
             .map(|t| t.definition().category.clone())
             .collect();
 

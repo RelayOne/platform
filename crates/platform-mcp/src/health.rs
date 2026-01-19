@@ -314,19 +314,21 @@ impl HealthChecker {
         info!("Performing full health check");
         let start = Instant::now();
 
-        let (noteman_health, shipcheck_health, verity_health) = if self.health_config.parallel_checks
-        {
-            tokio::join!(
-                self.check_service(&self.config.noteman, "NoteMan"),
-                self.check_service(&self.config.shipcheck, "ShipCheck"),
-                self.check_service(&self.config.verity, "Verity"),
-            )
-        } else {
-            let n = self.check_service(&self.config.noteman, "NoteMan").await;
-            let s = self.check_service(&self.config.shipcheck, "ShipCheck").await;
-            let v = self.check_service(&self.config.verity, "Verity").await;
-            (n, s, v)
-        };
+        let (noteman_health, shipcheck_health, verity_health) =
+            if self.health_config.parallel_checks {
+                tokio::join!(
+                    self.check_service(&self.config.noteman, "NoteMan"),
+                    self.check_service(&self.config.shipcheck, "ShipCheck"),
+                    self.check_service(&self.config.verity, "Verity"),
+                )
+            } else {
+                let n = self.check_service(&self.config.noteman, "NoteMan").await;
+                let s = self
+                    .check_service(&self.config.shipcheck, "ShipCheck")
+                    .await;
+                let v = self.check_service(&self.config.verity, "Verity").await;
+                (n, s, v)
+            };
 
         let services = vec![noteman_health, shipcheck_health, verity_health];
         let status = Self::aggregate_status(&services);
@@ -600,8 +602,14 @@ impl MetricsCollector {
             let p95_idx = (sorted.len() as f64 * 0.95) as usize;
             let p99_idx = (sorted.len() as f64 * 0.99) as usize;
 
-            let p95 = sorted.get(p95_idx.min(sorted.len() - 1)).copied().unwrap_or(0) as f64;
-            let p99 = sorted.get(p99_idx.min(sorted.len() - 1)).copied().unwrap_or(0) as f64;
+            let p95 = sorted
+                .get(p95_idx.min(sorted.len() - 1))
+                .copied()
+                .unwrap_or(0) as f64;
+            let p99 = sorted
+                .get(p99_idx.min(sorted.len() - 1))
+                .copied()
+                .unwrap_or(0) as f64;
 
             (avg, p95, p99)
         } else {
@@ -679,7 +687,10 @@ mod tests {
                 version: None,
             },
         ];
-        assert_eq!(HealthChecker::aggregate_status(&healthy), HealthStatus::Healthy);
+        assert_eq!(
+            HealthChecker::aggregate_status(&healthy),
+            HealthStatus::Healthy
+        );
 
         let degraded = vec![
             ServiceHealth {
@@ -701,20 +712,24 @@ mod tests {
                 version: None,
             },
         ];
-        assert_eq!(HealthChecker::aggregate_status(&degraded), HealthStatus::Degraded);
+        assert_eq!(
+            HealthChecker::aggregate_status(&degraded),
+            HealthStatus::Degraded
+        );
 
-        let unhealthy = vec![
-            ServiceHealth {
-                name: "a".into(),
-                status: ServiceStatus::Down,
-                latency_ms: 0,
-                url: "http://a".into(),
-                error: Some("Connection refused".into()),
-                last_success: None,
-                version: None,
-            },
-        ];
-        assert_eq!(HealthChecker::aggregate_status(&unhealthy), HealthStatus::Unhealthy);
+        let unhealthy = vec![ServiceHealth {
+            name: "a".into(),
+            status: ServiceStatus::Down,
+            latency_ms: 0,
+            url: "http://a".into(),
+            error: Some("Connection refused".into()),
+            last_success: None,
+            version: None,
+        }];
+        assert_eq!(
+            HealthChecker::aggregate_status(&unhealthy),
+            HealthStatus::Unhealthy
+        );
     }
 
     #[test]

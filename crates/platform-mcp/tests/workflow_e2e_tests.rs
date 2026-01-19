@@ -175,7 +175,9 @@ async fn test_verify_meeting_notes_meeting_not_found() {
         .await;
 
     let noteman = fixture.noteman_client();
-    let result = noteman.get_meeting_content("mtg-nonexistent", "summary").await;
+    let result = noteman
+        .get_meeting_content("mtg-nonexistent", "summary")
+        .await;
 
     assert!(result.is_err());
 }

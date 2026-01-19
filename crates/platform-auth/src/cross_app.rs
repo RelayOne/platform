@@ -554,7 +554,8 @@ mod tests {
             AppId::Verity,
             vec![AppId::NoteMan],
             vec!["notes.write".to_string()],
-        ).with_context(context);
+        )
+        .with_context(context);
 
         assert!(token.source_context.is_some());
         let ctx = token.source_context.unwrap();

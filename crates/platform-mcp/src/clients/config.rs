@@ -94,20 +94,17 @@ impl ServiceConfig {
 
         Self {
             noteman: ServiceEndpoint {
-                base_url: std::env::var("NOTEMAN_API_URL")
-                    .unwrap_or(default.noteman.base_url),
+                base_url: std::env::var("NOTEMAN_API_URL").unwrap_or(default.noteman.base_url),
                 api_key: std::env::var("NOTEMAN_API_KEY").ok(),
                 webhook_secret: std::env::var("NOTEMAN_WEBHOOK_SECRET").ok(),
             },
             shipcheck: ServiceEndpoint {
-                base_url: std::env::var("SHIPCHECK_API_URL")
-                    .unwrap_or(default.shipcheck.base_url),
+                base_url: std::env::var("SHIPCHECK_API_URL").unwrap_or(default.shipcheck.base_url),
                 api_key: std::env::var("SHIPCHECK_API_KEY").ok(),
                 webhook_secret: std::env::var("SHIPCHECK_WEBHOOK_SECRET").ok(),
             },
             verity: ServiceEndpoint {
-                base_url: std::env::var("VERITY_API_URL")
-                    .unwrap_or(default.verity.base_url),
+                base_url: std::env::var("VERITY_API_URL").unwrap_or(default.verity.base_url),
                 api_key: std::env::var("VERITY_API_KEY").ok(),
                 webhook_secret: std::env::var("VERITY_WEBHOOK_SECRET").ok(),
             },
@@ -194,8 +191,14 @@ mod tests {
             webhook_secret: None,
         };
 
-        assert_eq!(endpoint.url("/v1/meetings"), "https://api.example.com/v1/meetings");
-        assert_eq!(endpoint.url("v1/meetings"), "https://api.example.com/v1/meetings");
+        assert_eq!(
+            endpoint.url("/v1/meetings"),
+            "https://api.example.com/v1/meetings"
+        );
+        assert_eq!(
+            endpoint.url("v1/meetings"),
+            "https://api.example.com/v1/meetings"
+        );
     }
 
     #[test]
@@ -206,7 +209,10 @@ mod tests {
             webhook_secret: None,
         };
 
-        assert_eq!(endpoint.url("/v1/meetings"), "https://api.example.com/v1/meetings");
+        assert_eq!(
+            endpoint.url("/v1/meetings"),
+            "https://api.example.com/v1/meetings"
+        );
     }
 
     #[test]

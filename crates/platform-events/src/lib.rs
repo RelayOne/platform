@@ -113,7 +113,10 @@ pub mod types;
 pub mod redis;
 
 // Re-export main types
-pub use bus::{EventBus, EventBusError, EventBusResult, EventBusStats, EventHandler, MemoryEventBus, Subscription};
+pub use bus::{
+    EventBus, EventBusError, EventBusResult, EventBusStats, EventHandler, MemoryEventBus,
+    Subscription,
+};
 pub use types::{
     ActionItem, AssertionEvent, CrossAppEvent, DocumentEvent, Event, EventCategory, MeetingEvent,
     RepositoryEvent,

@@ -82,7 +82,10 @@ impl ShipCheckClient {
         &self,
         params: AnalyzeCodeParams,
     ) -> Result<AnalyzeCodeResponse, ShipCheckError> {
-        debug!("Starting code analysis for repository {}", params.repository_id);
+        debug!(
+            "Starting code analysis for repository {}",
+            params.repository_id
+        );
 
         let url = self.endpoint.url("/api/v1/analyze");
         let mut request = self.client.post(&url).json(&params);
@@ -165,13 +168,12 @@ impl ShipCheckClient {
     ///
     /// Retrieves repository information including analysis status.
     #[instrument(skip(self), fields(repository_id = %repository_id))]
-    pub async fn get_repository(
-        &self,
-        repository_id: &str,
-    ) -> Result<Repository, ShipCheckError> {
+    pub async fn get_repository(&self, repository_id: &str) -> Result<Repository, ShipCheckError> {
         debug!("Fetching repository {}", repository_id);
 
-        let url = self.endpoint.url(&format!("/api/v1/repositories/{}", repository_id));
+        let url = self
+            .endpoint
+            .url(&format!("/api/v1/repositories/{}", repository_id));
         let mut request = self.client.get(&url);
 
         if let Some(ref api_key) = self.endpoint.api_key {
@@ -181,7 +183,9 @@ impl ShipCheckClient {
         let response = request.send().await?;
 
         if response.status() == reqwest::StatusCode::NOT_FOUND {
-            return Err(ShipCheckError::RepositoryNotFound(repository_id.to_string()));
+            return Err(ShipCheckError::RepositoryNotFound(
+                repository_id.to_string(),
+            ));
         }
 
         self.handle_response(response).await
@@ -194,7 +198,9 @@ impl ShipCheckClient {
     pub async fn get_finding(&self, finding_id: &str) -> Result<Finding, ShipCheckError> {
         debug!("Fetching finding {}", finding_id);
 
-        let url = self.endpoint.url(&format!("/api/v1/findings/{}", finding_id));
+        let url = self
+            .endpoint
+            .url(&format!("/api/v1/findings/{}", finding_id));
         let mut request = self.client.get(&url);
 
         if let Some(ref api_key) = self.endpoint.api_key {
@@ -221,7 +227,9 @@ impl ShipCheckClient {
     ) -> Result<RepositoryDocs, ShipCheckError> {
         debug!("Fetching documentation for repository {}", repository_id);
 
-        let url = self.endpoint.url(&format!("/api/v1/repositories/{}/docs", repository_id));
+        let url = self
+            .endpoint
+            .url(&format!("/api/v1/repositories/{}/docs", repository_id));
         let mut request = self.client.post(&url).json(&serde_json::json!({
             "paths": paths
         }));
@@ -289,7 +297,10 @@ impl ShipCheckClient {
         }
 
         if !status.is_success() {
-            let message = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            let message = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
             warn!("ShipCheck API error ({}): {}", status.as_u16(), message);
             return Err(ShipCheckError::ApiError {
                 status: status.as_u16(),

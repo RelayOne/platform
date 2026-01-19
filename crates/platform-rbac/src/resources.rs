@@ -357,10 +357,7 @@ impl ResourceType {
     /// assert!(verity_resources.contains(&ResourceType::Assertion));
     /// ```
     pub fn for_app(app: App) -> Vec<Self> {
-        Self::all()
-            .into_iter()
-            .filter(|r| r.app() == app)
-            .collect()
+        Self::all().into_iter().filter(|r| r.app() == app).collect()
     }
 }
 
@@ -415,14 +412,8 @@ mod tests {
             Some(ResourceType::Organization)
         );
         assert_eq!(ResourceType::parse("org"), Some(ResourceType::Organization));
-        assert_eq!(
-            ResourceType::parse("api_key"),
-            Some(ResourceType::ApiKey)
-        );
-        assert_eq!(
-            ResourceType::parse("webhook"),
-            Some(ResourceType::Webhook)
-        );
+        assert_eq!(ResourceType::parse("api_key"), Some(ResourceType::ApiKey));
+        assert_eq!(ResourceType::parse("webhook"), Some(ResourceType::Webhook));
 
         // Verity
         assert_eq!(
@@ -444,10 +435,7 @@ mod tests {
         );
 
         // NoteMan
-        assert_eq!(
-            ResourceType::parse("meeting"),
-            Some(ResourceType::Meeting)
-        );
+        assert_eq!(ResourceType::parse("meeting"), Some(ResourceType::Meeting));
         assert_eq!(
             ResourceType::parse("transcript"),
             Some(ResourceType::Transcript)
@@ -470,10 +458,7 @@ mod tests {
             ResourceType::parse("repository"),
             Some(ResourceType::Repository)
         );
-        assert_eq!(
-            ResourceType::parse("repo"),
-            Some(ResourceType::Repository)
-        );
+        assert_eq!(ResourceType::parse("repo"), Some(ResourceType::Repository));
         assert_eq!(
             ResourceType::parse("code_verification"),
             Some(ResourceType::CodeVerification)

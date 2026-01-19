@@ -50,7 +50,11 @@ impl Default for JwtConfig {
             public_key: None,
             algorithm: JwtAlgorithm::HS256,
             issuer: "relay-platform".to_string(),
-            audience: vec!["verity".to_string(), "noteman".to_string(), "shipcheck".to_string()],
+            audience: vec![
+                "verity".to_string(),
+                "noteman".to_string(),
+                "shipcheck".to_string(),
+            ],
             access_token_duration: Duration::hours(1),
             refresh_token_duration: Duration::days(7),
         }
@@ -155,25 +159,22 @@ impl JwtService {
     fn create_encoding_key(config: &JwtConfig) -> AuthResult<EncodingKey> {
         match config.algorithm {
             JwtAlgorithm::HS256 | JwtAlgorithm::HS384 | JwtAlgorithm::HS512 => {
-                let secret = config
-                    .secret
-                    .as_ref()
-                    .ok_or_else(|| AuthError::ConfigError("Secret required for HMAC".to_string()))?;
+                let secret = config.secret.as_ref().ok_or_else(|| {
+                    AuthError::ConfigError("Secret required for HMAC".to_string())
+                })?;
                 Ok(EncodingKey::from_secret(secret.as_bytes()))
             }
             JwtAlgorithm::RS256 | JwtAlgorithm::RS384 | JwtAlgorithm::RS512 => {
-                let key = config
-                    .private_key
-                    .as_ref()
-                    .ok_or_else(|| AuthError::ConfigError("Private key required for RSA".to_string()))?;
+                let key = config.private_key.as_ref().ok_or_else(|| {
+                    AuthError::ConfigError("Private key required for RSA".to_string())
+                })?;
                 EncodingKey::from_rsa_pem(key.as_bytes())
                     .map_err(|e| AuthError::ConfigError(format!("Invalid RSA private key: {}", e)))
             }
             JwtAlgorithm::ES256 | JwtAlgorithm::ES384 => {
-                let key = config
-                    .private_key
-                    .as_ref()
-                    .ok_or_else(|| AuthError::ConfigError("Private key required for EC".to_string()))?;
+                let key = config.private_key.as_ref().ok_or_else(|| {
+                    AuthError::ConfigError("Private key required for EC".to_string())
+                })?;
                 EncodingKey::from_ec_pem(key.as_bytes())
                     .map_err(|e| AuthError::ConfigError(format!("Invalid EC private key: {}", e)))
             }
@@ -184,25 +185,22 @@ impl JwtService {
     fn create_decoding_key(config: &JwtConfig) -> AuthResult<DecodingKey> {
         match config.algorithm {
             JwtAlgorithm::HS256 | JwtAlgorithm::HS384 | JwtAlgorithm::HS512 => {
-                let secret = config
-                    .secret
-                    .as_ref()
-                    .ok_or_else(|| AuthError::ConfigError("Secret required for HMAC".to_string()))?;
+                let secret = config.secret.as_ref().ok_or_else(|| {
+                    AuthError::ConfigError("Secret required for HMAC".to_string())
+                })?;
                 Ok(DecodingKey::from_secret(secret.as_bytes()))
             }
             JwtAlgorithm::RS256 | JwtAlgorithm::RS384 | JwtAlgorithm::RS512 => {
-                let key = config
-                    .public_key
-                    .as_ref()
-                    .ok_or_else(|| AuthError::ConfigError("Public key required for RSA".to_string()))?;
+                let key = config.public_key.as_ref().ok_or_else(|| {
+                    AuthError::ConfigError("Public key required for RSA".to_string())
+                })?;
                 DecodingKey::from_rsa_pem(key.as_bytes())
                     .map_err(|e| AuthError::ConfigError(format!("Invalid RSA public key: {}", e)))
             }
             JwtAlgorithm::ES256 | JwtAlgorithm::ES384 => {
-                let key = config
-                    .public_key
-                    .as_ref()
-                    .ok_or_else(|| AuthError::ConfigError("Public key required for EC".to_string()))?;
+                let key = config.public_key.as_ref().ok_or_else(|| {
+                    AuthError::ConfigError("Public key required for EC".to_string())
+                })?;
                 DecodingKey::from_ec_pem(key.as_bytes())
                     .map_err(|e| AuthError::ConfigError(format!("Invalid EC public key: {}", e)))
             }
@@ -220,7 +218,11 @@ impl JwtService {
     ///
     /// Encoded JWT token string
     #[cfg(feature = "jwt")]
-    pub fn generate_access_token(&self, user_id: Uuid, email: impl Into<String>) -> AuthResult<String> {
+    pub fn generate_access_token(
+        &self,
+        user_id: Uuid,
+        email: impl Into<String>,
+    ) -> AuthResult<String> {
         let claims = PlatformClaims::new(user_id, email, self.config.access_token_duration);
         self.encode_claims(&claims)
     }
@@ -236,7 +238,11 @@ impl JwtService {
     ///
     /// Encoded JWT token string
     #[cfg(feature = "jwt")]
-    pub fn generate_refresh_token(&self, user_id: Uuid, email: impl Into<String>) -> AuthResult<String> {
+    pub fn generate_refresh_token(
+        &self,
+        user_id: Uuid,
+        email: impl Into<String>,
+    ) -> AuthResult<String> {
         let claims = PlatformClaims::new(user_id, email, self.config.refresh_token_duration)
             .with_token_type(crate::claims::TokenType::Refresh);
         self.encode_claims(&claims)
@@ -343,7 +349,10 @@ impl JwtService {
     ///
     /// Returns an error if token encoding fails
     #[cfg(feature = "jwt")]
-    pub fn encode_cross_app_token(&self, token: &crate::cross_app::CrossAppToken) -> AuthResult<String> {
+    pub fn encode_cross_app_token(
+        &self,
+        token: &crate::cross_app::CrossAppToken,
+    ) -> AuthResult<String> {
         let header = Header::new(self.config.algorithm.into());
         encode(&header, token, &self.encoding_key)
             .map_err(|e| AuthError::Internal(format!("Cross-app token encoding failed: {}", e)))
@@ -370,7 +379,10 @@ impl JwtService {
     /// - The token has expired
     /// - The issuer or audience is invalid
     #[cfg(feature = "jwt")]
-    pub fn decode_cross_app_token(&self, token: &str) -> AuthResult<crate::cross_app::CrossAppToken> {
+    pub fn decode_cross_app_token(
+        &self,
+        token: &str,
+    ) -> AuthResult<crate::cross_app::CrossAppToken> {
         let mut validation = Validation::new(self.config.algorithm.into());
         // Cross-app tokens can be issued by any platform app
         validation.set_issuer(&["verity", "noteman", "shipcheck"]);
@@ -378,20 +390,19 @@ impl JwtService {
         validation.validate_aud = false;
 
         let token_data: TokenData<crate::cross_app::CrossAppToken> =
-            decode(token, &self.decoding_key, &validation)
-                .map_err(|e| match e.kind() {
-                    jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
-                    jsonwebtoken::errors::ErrorKind::InvalidToken => {
-                        AuthError::InvalidToken("Malformed cross-app token".to_string())
-                    }
-                    jsonwebtoken::errors::ErrorKind::InvalidSignature => {
-                        AuthError::InvalidToken("Invalid signature".to_string())
-                    }
-                    jsonwebtoken::errors::ErrorKind::InvalidIssuer => {
-                        AuthError::InvalidToken("Invalid issuer".to_string())
-                    }
-                    _ => AuthError::InvalidToken(e.to_string()),
-                })?;
+            decode(token, &self.decoding_key, &validation).map_err(|e| match e.kind() {
+                jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
+                jsonwebtoken::errors::ErrorKind::InvalidToken => {
+                    AuthError::InvalidToken("Malformed cross-app token".to_string())
+                }
+                jsonwebtoken::errors::ErrorKind::InvalidSignature => {
+                    AuthError::InvalidToken("Invalid signature".to_string())
+                }
+                jsonwebtoken::errors::ErrorKind::InvalidIssuer => {
+                    AuthError::InvalidToken("Invalid issuer".to_string())
+                }
+                _ => AuthError::InvalidToken(e.to_string()),
+            })?;
 
         Ok(token_data.claims)
     }
@@ -413,7 +424,10 @@ impl JwtService {
     ///
     /// Returns an error if token encoding fails
     #[cfg(feature = "jwt")]
-    pub fn encode_service_token(&self, token: &crate::cross_app::ServiceToken) -> AuthResult<String> {
+    pub fn encode_service_token(
+        &self,
+        token: &crate::cross_app::ServiceToken,
+    ) -> AuthResult<String> {
         let header = Header::new(self.config.algorithm.into());
         encode(&header, token, &self.encoding_key)
             .map_err(|e| AuthError::Internal(format!("Service token encoding failed: {}", e)))
@@ -447,20 +461,19 @@ impl JwtService {
         validation.validate_aud = false;
 
         let token_data: TokenData<crate::cross_app::ServiceToken> =
-            decode(token, &self.decoding_key, &validation)
-                .map_err(|e| match e.kind() {
-                    jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
-                    jsonwebtoken::errors::ErrorKind::InvalidToken => {
-                        AuthError::InvalidToken("Malformed service token".to_string())
-                    }
-                    jsonwebtoken::errors::ErrorKind::InvalidSignature => {
-                        AuthError::InvalidToken("Invalid signature".to_string())
-                    }
-                    jsonwebtoken::errors::ErrorKind::InvalidIssuer => {
-                        AuthError::InvalidToken("Invalid issuer".to_string())
-                    }
-                    _ => AuthError::InvalidToken(e.to_string()),
-                })?;
+            decode(token, &self.decoding_key, &validation).map_err(|e| match e.kind() {
+                jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
+                jsonwebtoken::errors::ErrorKind::InvalidToken => {
+                    AuthError::InvalidToken("Malformed service token".to_string())
+                }
+                jsonwebtoken::errors::ErrorKind::InvalidSignature => {
+                    AuthError::InvalidToken("Invalid signature".to_string())
+                }
+                jsonwebtoken::errors::ErrorKind::InvalidIssuer => {
+                    AuthError::InvalidToken("Invalid issuer".to_string())
+                }
+                _ => AuthError::InvalidToken(e.to_string()),
+            })?;
 
         Ok(token_data.claims)
     }
@@ -513,7 +526,9 @@ mod tests {
         let service = JwtService::with_secret(test_secret()).unwrap();
         let user_id = Uuid::now_v7();
 
-        let token = service.generate_access_token(user_id, "test@example.com").unwrap();
+        let token = service
+            .generate_access_token(user_id, "test@example.com")
+            .unwrap();
         let claims = service.validate_token(&token).unwrap();
 
         assert_eq!(claims.user_id(), Some(user_id));

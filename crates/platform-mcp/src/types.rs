@@ -161,7 +161,10 @@ impl McpError {
 
     /// Method not found.
     pub fn method_not_found(method: &str) -> Self {
-        Self::new(Self::METHOD_NOT_FOUND, format!("Method not found: {}", method))
+        Self::new(
+            Self::METHOD_NOT_FOUND,
+            format!("Method not found: {}", method),
+        )
     }
 
     /// Invalid params.
@@ -271,7 +274,9 @@ impl ToolResult {
     /// Create a success result with text content.
     pub fn text(content: impl Into<String>) -> Self {
         Self {
-            content: vec![ContentBlock::Text { text: content.into() }],
+            content: vec![ContentBlock::Text {
+                text: content.into(),
+            }],
             is_error: false,
         }
     }
@@ -279,7 +284,9 @@ impl ToolResult {
     /// Create an error result.
     pub fn error(message: impl Into<String>) -> Self {
         Self {
-            content: vec![ContentBlock::Text { text: message.into() }],
+            content: vec![ContentBlock::Text {
+                text: message.into(),
+            }],
             is_error: true,
         }
     }
@@ -303,10 +310,7 @@ pub enum ContentBlock {
     Text { text: String },
 
     /// Image content
-    Image {
-        data: String,
-        mime_type: String,
-    },
+    Image { data: String, mime_type: String },
 
     /// Resource reference
     Resource {

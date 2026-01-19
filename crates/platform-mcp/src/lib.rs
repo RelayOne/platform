@@ -134,17 +134,13 @@ pub use types::{
 };
 
 // Re-export tool collections
-pub use tools::{
-    noteman_tools, shipcheck_tools, verity_tools, workflow_tools,
-};
+pub use tools::{noteman_tools, shipcheck_tools, verity_tools, workflow_tools};
 
 // Re-export service clients
-pub use clients::{
-    NoteManClient, ShipCheckClient, VerityClient, ServiceConfig,
-};
+pub use clients::{NoteManClient, ServiceConfig, ShipCheckClient, VerityClient};
 
 // Re-export health check types
 pub use health::{
-    HealthChecker, HealthReport, HealthStatus, ServiceHealth, ServiceStatus,
-    IntegrationMetrics, MetricsCollector, LivenessResult, ReadinessResult,
+    HealthChecker, HealthReport, HealthStatus, IntegrationMetrics, LivenessResult,
+    MetricsCollector, ReadinessResult, ServiceHealth, ServiceStatus,
 };

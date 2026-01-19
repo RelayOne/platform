@@ -119,7 +119,11 @@ impl PlatformClaims {
         Self {
             sub: user_id.to_string(),
             iss: "relay-platform".to_string(),
-            aud: vec!["verity".to_string(), "noteman".to_string(), "shipcheck".to_string()],
+            aud: vec![
+                "verity".to_string(),
+                "noteman".to_string(),
+                "shipcheck".to_string(),
+            ],
             exp: exp.timestamp(),
             iat: now.timestamp(),
             nbf: now.timestamp(),
@@ -179,7 +183,13 @@ impl PlatformClaims {
 
     /// Add organization access.
     pub fn with_org(mut self, org_id: Uuid, role: OrganizationRole) -> Self {
-        self.orgs.insert(org_id.to_string(), OrgClaim { role, projects: HashMap::new() });
+        self.orgs.insert(
+            org_id.to_string(),
+            OrgClaim {
+                role,
+                projects: HashMap::new(),
+            },
+        );
         self
     }
 
@@ -197,7 +207,8 @@ impl PlatformClaims {
 
     /// Add app permissions.
     pub fn with_app_permissions(mut self, app: App, permissions: Vec<String>) -> Self {
-        self.app_permissions.insert(app.as_str().to_string(), permissions);
+        self.app_permissions
+            .insert(app.as_str().to_string(), permissions);
         self
     }
 

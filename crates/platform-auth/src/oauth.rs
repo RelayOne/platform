@@ -60,7 +60,9 @@ impl OAuthProvider {
         match self {
             OAuthProvider::Google => Some("https://accounts.google.com/o/oauth2/v2/auth"),
             OAuthProvider::GitHub => Some("https://github.com/login/oauth/authorize"),
-            OAuthProvider::Microsoft => Some("https://login.microsoftonline.com/common/oauth2/v2.0/authorize"),
+            OAuthProvider::Microsoft => {
+                Some("https://login.microsoftonline.com/common/oauth2/v2.0/authorize")
+            }
             OAuthProvider::Apple => Some("https://appleid.apple.com/auth/authorize"),
             OAuthProvider::Slack => Some("https://slack.com/oauth/v2/authorize"),
             OAuthProvider::Custom => None,
@@ -72,7 +74,9 @@ impl OAuthProvider {
         match self {
             OAuthProvider::Google => Some("https://oauth2.googleapis.com/token"),
             OAuthProvider::GitHub => Some("https://github.com/login/oauth/access_token"),
-            OAuthProvider::Microsoft => Some("https://login.microsoftonline.com/common/oauth2/v2.0/token"),
+            OAuthProvider::Microsoft => {
+                Some("https://login.microsoftonline.com/common/oauth2/v2.0/token")
+            }
             OAuthProvider::Apple => Some("https://appleid.apple.com/auth/token"),
             OAuthProvider::Slack => Some("https://slack.com/api/oauth.v2.access"),
             OAuthProvider::Custom => None,
@@ -136,7 +140,11 @@ impl OAuthConfig {
             auth_url: None,
             token_url: None,
             redirect_url: redirect_url.into(),
-            scopes: provider.default_scopes().iter().map(|s| s.to_string()).collect(),
+            scopes: provider
+                .default_scopes()
+                .iter()
+                .map(|s| s.to_string())
+                .collect(),
             extra_params: HashMap::new(),
         }
     }
@@ -196,11 +204,13 @@ pub struct OAuthUserInfo {
 impl OAuthUserInfo {
     /// Create claims from OAuth user info.
     pub fn to_claims(&self, user_id: Uuid, duration: Duration) -> AuthResult<PlatformClaims> {
-        let email = self.email.clone()
+        let email = self
+            .email
+            .clone()
             .ok_or_else(|| AuthError::MissingClaim("email".to_string()))?;
 
-        let mut claims = PlatformClaims::new(user_id, email, duration)
-            .with_auth_method(AuthMethod::OAuth);
+        let mut claims =
+            PlatformClaims::new(user_id, email, duration).with_auth_method(AuthMethod::OAuth);
 
         claims.email_verified = self.email_verified;
         claims.name = self.name.clone();
@@ -338,8 +348,14 @@ mod tests {
     fn test_oauth_provider_parsing() {
         assert_eq!(OAuthProvider::parse("google"), Some(OAuthProvider::Google));
         assert_eq!(OAuthProvider::parse("GitHub"), Some(OAuthProvider::GitHub));
-        assert_eq!(OAuthProvider::parse("microsoft"), Some(OAuthProvider::Microsoft));
-        assert_eq!(OAuthProvider::parse("azure"), Some(OAuthProvider::Microsoft));
+        assert_eq!(
+            OAuthProvider::parse("microsoft"),
+            Some(OAuthProvider::Microsoft)
+        );
+        assert_eq!(
+            OAuthProvider::parse("azure"),
+            Some(OAuthProvider::Microsoft)
+        );
         assert_eq!(OAuthProvider::parse("invalid"), None);
     }
 
