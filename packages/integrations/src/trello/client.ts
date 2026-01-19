@@ -17,7 +17,7 @@ import {
   type ListProjectsOptions,
   RateLimiter,
   FieldMapper,
-} from '@agentforge/tracker-common';
+} from '../tracker-base';
 import type {
   TrelloCard,
   TrelloBoard,

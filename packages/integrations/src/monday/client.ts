@@ -13,7 +13,7 @@ import {
   type PaginatedResult,
   ComplexityTracker,
   RateLimiter,
-} from '@agentforge/tracker-common';
+} from '../tracker-base';
 import type {
   MondayItem,
   MondayBoard,

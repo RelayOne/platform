@@ -15,7 +15,7 @@ import {
   type PaginatedResult,
   type CreateTaskInput,
   type UpdateTaskInput,
-} from '@agentforge/tracker-common';
+} from '../tracker-base';
 import type {
   NotionDatabase,
   NotionPage,

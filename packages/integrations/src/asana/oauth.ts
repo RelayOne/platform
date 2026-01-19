@@ -1,5 +1,5 @@
 import { createLogger } from '@relay/logger';
-import type { TrackerAuthConfig } from '@agentforge/tracker-common';
+import type { TrackerAuthConfig } from '../tracker-base';
 import type { AsanaOAuth2Config, AsanaOAuthTokens } from './types';
 
 /**

@@ -12,7 +12,7 @@ import {
   type UpdateTaskInput,
   type PaginatedResult,
   RateLimiter,
-} from '@agentforge/tracker-common';
+} from '../tracker-base';
 import type {
   ClickUpTask,
   ClickUpList,

@@ -67,4 +67,4 @@ export type {
   CreateTaskInput,
   UpdateTaskInput,
   PaginatedResult,
-} from '@agentforge/tracker-common';
+} from '../tracker-base';

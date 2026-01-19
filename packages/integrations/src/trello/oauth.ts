@@ -1,6 +1,6 @@
 import OAuth from 'oauth-1.0a';
 import { createHmac } from 'crypto';
-import type { TrackerAuthConfig } from '@agentforge/tracker-common';
+import type { TrackerAuthConfig } from '../tracker-base';
 import type { TrelloOAuth1Config, TrelloOAuthTokens } from './types';
 
 /**

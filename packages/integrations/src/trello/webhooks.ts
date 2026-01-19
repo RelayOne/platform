@@ -5,7 +5,7 @@ import {
   type WebhookEventPayload,
   type WebhookRequest,
   type WebhookResponse,
-} from '@agentforge/tracker-common';
+} from '../tracker-base';
 import type {
   TrelloWebhookPayload,
   TrelloWebhookActionType,

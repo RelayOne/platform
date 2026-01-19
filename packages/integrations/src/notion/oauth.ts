@@ -8,7 +8,7 @@
  */
 
 import { createLogger } from '@relay/logger';
-import type { TrackerAuthConfig } from '@agentforge/tracker-common';
+import type { TrackerAuthConfig } from '../tracker-base';
 import type { NotionOAuth2Config, NotionOAuthTokens } from './types';
 
 const logger = createLogger('notion-oauth');

@@ -4,7 +4,7 @@ import {
   type WebhookHandlerConfig,
   type WebhookRequest,
   type WebhookResponse,
-} from '@agentforge/tracker-common';
+} from '../tracker-base';
 import type { ClickUpWebhookPayload, ClickUpWebhookEvent } from './types';
 import { ClickUpWebhookPayloadSchema } from './types';
 

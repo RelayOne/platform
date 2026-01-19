@@ -4,7 +4,7 @@ import {
   type WebhookHandlerConfig,
   type WebhookRequest,
   type WebhookResponse,
-} from '@agentforge/tracker-common';
+} from '../tracker-base';
 import type { WrikeWebhookPayload, WrikeWebhookEventType } from './types';
 import { WrikeWebhookPayloadSchema } from './types';
 
