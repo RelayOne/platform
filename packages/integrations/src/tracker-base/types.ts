@@ -331,6 +331,11 @@ export interface PaginatedResponse<T> {
 }
 
 /**
+ * Alias for PaginatedResponse for backward compatibility
+ */
+export type PaginatedResult<T> = PaginatedResponse<T>;
+
+/**
  * Rate limit status
  */
 export interface RateLimitStatus {

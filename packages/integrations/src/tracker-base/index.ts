@@ -51,6 +51,7 @@ export {
 
   // Response types
   type PaginatedResponse,
+  type PaginatedResult,
   type RateLimitStatus,
   type ConnectionTestResult,
 

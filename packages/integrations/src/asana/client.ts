@@ -1,6 +1,7 @@
 import { createLogger } from '@relay/logger';
 import {
   BaseTrackerClient,
+  type TrackerProvider,
   type TrackerClientConfig,
   type TrackerTask,
   type TrackerProject,
@@ -10,10 +11,12 @@ import {
   type TrackerAuthConfig,
   type CreateTaskInput,
   type UpdateTaskInput,
-  type PaginatedResult,
+  type PaginatedResponse,
+  type RateLimitStatus,
+  type ConnectionTestResult,
   RateLimiter,
   FieldMapper,
-} from '@agentforge/tracker-common';
+} from '../tracker-base';
 import type {
   AsanaTask,
   AsanaProject,
@@ -182,7 +185,7 @@ const DEFAULT_OPT_FIELDS = {
  * ```
  */
 export class AsanaClient extends BaseTrackerClient {
-  private config: AsanaClientConfig;
+  private asanaConfig: AsanaClientConfig;
   private rateLimiter: RateLimiter;
   private fieldMapper: FieldMapper;
   private workspaceId?: string;
@@ -191,15 +194,31 @@ export class AsanaClient extends BaseTrackerClient {
   private static readonly API_BASE = 'https://app.asana.com/api/1.0';
 
   /**
+   * Get the tracker provider identifier.
+   * @returns The provider name
+   */
+  get provider(): TrackerProvider {
+    return 'asana';
+  }
+
+  /**
+   * Get the base API URL for this tracker.
+   * @returns The base URL for API requests
+   */
+  get baseUrl(): string {
+    return AsanaClient.API_BASE;
+  }
+
+  /**
    * Creates a new Asana client.
    * @param config - Client configuration
    */
   constructor(config: AsanaClientConfig) {
     super(config);
-    this.config = config;
+    this.asanaConfig = config;
     this.workspaceId = config.workspaceId;
     this.rateLimiter = RateLimiter.forTracker('asana');
-    this.fieldMapper = new FieldMapper('asana');
+    this.fieldMapper = new FieldMapper({});
   }
 
   /**
@@ -221,7 +240,7 @@ export class AsanaClient extends BaseTrackerClient {
     const response = await fetch(url, {
       ...options,
       headers: {
-        Authorization: `Bearer ${this.config.auth.accessToken}`,
+        Authorization: `Bearer ${this.asanaConfig.auth.accessToken}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
         ...options.headers,
@@ -291,18 +310,22 @@ export class AsanaClient extends BaseTrackerClient {
    * Test the API connection.
    * @returns Connection status and user info
    */
-  async testConnection(): Promise<{ success: boolean; user?: TrackerUser; error?: string }> {
+  async testConnection(): Promise<ConnectionTestResult> {
+    const startTime = Date.now();
     try {
       const url = this.buildUrl('/users/me', {}, DEFAULT_OPT_FIELDS.user);
       const { data: user } = await this.request<AsanaUser>(url);
+      const latencyMs = Date.now() - startTime;
 
       return {
         success: true,
+        latencyMs,
         user: this.mapUser(user),
       };
     } catch (error) {
       return {
         success: false,
+        latencyMs: Date.now() - startTime,
         error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
@@ -324,7 +347,7 @@ export class AsanaClient extends BaseTrackerClient {
    */
   async listProjects(
     options?: AsanaListProjectsOptions
-  ): Promise<PaginatedResult<TrackerProject>> {
+  ): Promise<PaginatedResponse<TrackerProject>> {
     const workspaceId = await this.getWorkspaceId();
     const optFields = options?.opt_fields || DEFAULT_OPT_FIELDS.project;
 
@@ -350,12 +373,16 @@ export class AsanaClient extends BaseTrackerClient {
   /**
    * Get a project by ID.
    * @param projectId - Project GID
-   * @returns Project details
+   * @returns Project details or null if not found
    */
-  async getProject(projectId: string): Promise<TrackerProject> {
-    const url = this.buildUrl(`/projects/${projectId}`, {}, DEFAULT_OPT_FIELDS.project);
-    const { data: project } = await this.request<AsanaProject>(url);
-    return this.mapProject(project);
+  async getProject(projectId: string): Promise<TrackerProject | null> {
+    try {
+      const url = this.buildUrl(`/projects/${projectId}`, {}, DEFAULT_OPT_FIELDS.project);
+      const { data: project } = await this.request<AsanaProject>(url);
+      return this.mapProject(project);
+    } catch (error) {
+      return null;
+    }
   }
 
   /**
@@ -379,6 +406,7 @@ export class AsanaClient extends BaseTrackerClient {
     const { data: project } = await this.request<AsanaProject>(url);
     return (project.members || []).map((m) => ({
       id: m.gid,
+      externalId: m.gid,
       name: m.name || '',
       email: undefined,
     }));
@@ -393,7 +421,7 @@ export class AsanaClient extends BaseTrackerClient {
   async listTasks(
     projectId: string,
     options?: AsanaListTasksOptions
-  ): Promise<PaginatedResult<TrackerTask>> {
+  ): Promise<PaginatedResponse<TrackerTask>> {
     const optFields = options?.opt_fields || DEFAULT_OPT_FIELDS.task;
     let endpoint = `/projects/${projectId}/tasks`;
 
@@ -424,12 +452,16 @@ export class AsanaClient extends BaseTrackerClient {
   /**
    * Get a task by ID.
    * @param taskId - Task GID
-   * @returns Task details
+   * @returns Task details or null if not found
    */
-  async getTask(taskId: string): Promise<TrackerTask> {
-    const url = this.buildUrl(`/tasks/${taskId}`, {}, DEFAULT_OPT_FIELDS.task);
-    const { data: task } = await this.request<AsanaTask>(url);
-    return this.mapTask(task);
+  async getTask(taskId: string): Promise<TrackerTask | null> {
+    try {
+      const url = this.buildUrl(`/tasks/${taskId}`, {}, DEFAULT_OPT_FIELDS.task);
+      const { data: task } = await this.request<AsanaTask>(url);
+      return this.mapTask(task);
+    } catch (error) {
+      return null;
+    }
   }
 
   /**
@@ -445,7 +477,7 @@ export class AsanaClient extends BaseTrackerClient {
       assignee: input.assigneeIds?.[0],
       due_on: input.dueDate?.toISOString().split('T')[0],
       projects: [projectId],
-      tags: input.labels,
+      tags: input.labelIds,
     };
 
     const { data: task } = await this.request<AsanaTask>('/tasks', {
@@ -506,16 +538,30 @@ export class AsanaClient extends BaseTrackerClient {
   /**
    * List comments (stories) on a task.
    * @param taskId - Task GID
-   * @returns List of comments
+   * @param options - Pagination options
+   * @returns Paginated list of comments
    */
-  async listComments(taskId: string): Promise<TrackerComment[]> {
-    const url = this.buildUrl(`/tasks/${taskId}/stories`, {}, DEFAULT_OPT_FIELDS.story);
-    const { data: stories } = await this.request<AsanaStory[]>(url);
+  async listComments(
+    taskId: string,
+    options?: { cursor?: string; limit?: number }
+  ): Promise<PaginatedResponse<TrackerComment>> {
+    const url = this.buildUrl(
+      `/tasks/${taskId}/stories`,
+      { limit: options?.limit, offset: options?.cursor },
+      DEFAULT_OPT_FIELDS.story
+    );
+    const response = await this.request<AsanaStory[]>(url);
 
     // Filter to only comment stories
-    return stories
+    const comments = response.data
       .filter((s) => s.type === 'comment' || s.resource_subtype === 'comment_added')
       .map((s) => this.mapComment(s));
+
+    return {
+      items: comments,
+      nextCursor: response.next_page?.offset,
+      hasMore: !!response.next_page,
+    };
   }
 
   /**
@@ -534,18 +580,62 @@ export class AsanaClient extends BaseTrackerClient {
   }
 
   /**
+   * Update a comment (story) in Asana.
+   * Note: Asana only allows updating the text of a story within 15 minutes of creation.
+   * @param commentId - Story GID
+   * @param body - New comment text
+   * @returns Updated comment
+   */
+  async updateComment(commentId: string, body: string): Promise<TrackerComment> {
+    const { data: story } = await this.request<AsanaStory>(`/stories/${commentId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ data: { text: body } }),
+    });
+
+    return this.mapComment(story);
+  }
+
+  /**
+   * Delete a comment (story) in Asana.
+   * Note: Asana only allows deleting stories within 15 minutes of creation.
+   * @param commentId - Story GID
+   */
+  async deleteComment(commentId: string): Promise<void> {
+    await this.request(`/stories/${commentId}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Get current rate limit status.
+   * Note: Asana uses a standard rate limit but doesn't expose detailed status.
+   * @returns Rate limit information
+   */
+  async getRateLimitStatus(): Promise<RateLimitStatus> {
+    // Asana doesn't expose rate limit status in API, return estimated status
+    return {
+      remaining: 150, // Asana allows ~150 requests per minute
+      limit: 150,
+      resetAt: new Date(Date.now() + 60000), // Reset in 1 minute
+    };
+  }
+
+  /**
    * Search for tasks.
    * @param query - Search query
+   * @param options - Search options
    * @returns Search results
    */
-  async searchTasks(query: string): Promise<PaginatedResult<TrackerTask>> {
+  async searchTasks(
+    query: string,
+    options?: { projectIds?: string[]; cursor?: string; limit?: number }
+  ): Promise<PaginatedResponse<TrackerTask>> {
     const workspaceId = await this.getWorkspaceId();
 
     const url = this.buildUrl(
       `/workspaces/${workspaceId}/tasks/search`,
       {
         text: query,
-        limit: 50,
+        limit: options?.limit || 50,
+        offset: options?.cursor,
       },
       DEFAULT_OPT_FIELDS.task
     );
@@ -554,6 +644,7 @@ export class AsanaClient extends BaseTrackerClient {
 
     return {
       items: response.data.map((t) => this.mapTask(t)),
+      nextCursor: response.next_page?.offset,
       hasMore: !!response.next_page,
     };
   }
@@ -775,12 +866,15 @@ export class AsanaClient extends BaseTrackerClient {
    */
   private mapTask(task: AsanaTask): TrackerTask {
     const section = task.memberships?.[0]?.section;
+    const project = task.projects?.[0];
 
     return {
       id: task.gid,
-      key: task.gid,
+      externalId: task.gid,
+      provider: 'asana',
       title: task.name,
       description: task.notes || undefined,
+      descriptionFormat: task.html_notes ? 'html' : 'plain',
       status: section
         ? {
             id: section.gid || '',
@@ -793,25 +887,50 @@ export class AsanaClient extends BaseTrackerClient {
             category: task.completed ? 'done' : 'todo',
           },
       priority: this.extractPriority(task),
-      assignee: task.assignee
-        ? {
+      assignees: task.assignee
+        ? [{
             id: task.assignee.gid,
+            externalId: task.assignee.gid,
             name: task.assignee.name || '',
-          }
-        : undefined,
+            email: (task.assignee as { email?: string }).email,
+          }]
+        : [],
+      labels: task.tags?.map((t) => ({
+        id: t.gid,
+        name: t.name || t.gid,
+        color: (t as { color?: string }).color,
+      })) || [],
       createdAt: task.created_at ? new Date(task.created_at) : new Date(),
       updatedAt: task.modified_at ? new Date(task.modified_at) : new Date(),
       dueDate: task.due_on ? new Date(task.due_on) : undefined,
-      labels: task.tags?.map((t) => t.name || t.gid) || [],
-      url: task.permalink_url,
-      projectId: task.projects?.[0]?.gid,
-      parentId: task.parent?.gid,
+      startDate: task.start_on ? new Date(task.start_on) : undefined,
+      completedAt: task.completed_at ? new Date(task.completed_at) : undefined,
+      project: project
+        ? {
+            id: project.gid,
+            externalId: project.gid,
+            name: project.name || 'Unknown',
+          }
+        : undefined,
+      parent: task.parent
+        ? {
+            id: task.parent.gid,
+            externalId: task.parent.gid,
+            title: task.parent.name,
+          }
+        : undefined,
+      subtasks: [],
+      blockedBy: [],
+      blocks: [],
+      customFields: task.custom_fields?.reduce((acc, f) => {
+        acc[f.name] = f.display_value || f.text_value || f.number_value || f.enum_value?.name;
+        return acc;
+      }, {} as Record<string, unknown>) || {},
+      url: task.permalink_url || `https://app.asana.com/0/${project?.gid || '0'}/${task.gid}`,
       metadata: {
         provider: 'asana',
-        completedAt: task.completed_at,
         completedBy: task.completed_by?.gid,
         numSubtasks: task.num_subtasks,
-        customFields: task.custom_fields,
         resourceSubtype: task.resource_subtype,
       },
     };
@@ -825,12 +944,29 @@ export class AsanaClient extends BaseTrackerClient {
   private mapProject(project: AsanaProject): TrackerProject {
     return {
       id: project.gid,
-      key: project.gid,
+      externalId: project.gid,
+      provider: 'asana',
       name: project.name,
       description: project.notes,
-      url: project.permalink_url,
-      createdAt: project.created_at ? new Date(project.created_at) : undefined,
-      updatedAt: project.modified_at ? new Date(project.modified_at) : undefined,
+      key: project.gid,
+      owner: project.owner
+        ? {
+            id: project.owner.gid,
+            externalId: project.owner.gid,
+            name: project.owner.name || '',
+            email: (project.owner as { email?: string }).email,
+          }
+        : undefined,
+      members: (project.members || []).map((m) => ({
+        user: {
+          id: m.gid,
+          externalId: m.gid,
+          name: m.name || '',
+        },
+      })),
+      createdAt: project.created_at ? new Date(project.created_at) : new Date(),
+      updatedAt: project.modified_at ? new Date(project.modified_at) : new Date(),
+      url: project.permalink_url || `https://app.asana.com/0/${project.gid}`,
       metadata: {
         provider: 'asana',
         archived: project.archived,
@@ -842,7 +978,6 @@ export class AsanaClient extends BaseTrackerClient {
         team: project.team,
         workspace: project.workspace,
         currentStatus: project.current_status,
-        owner: project.owner,
       },
     };
   }
@@ -858,7 +993,6 @@ export class AsanaClient extends BaseTrackerClient {
       id: section.gid,
       name: section.name,
       category: this.inferStatusCategory(section.name, false),
-      position: index,
     };
   }
 
@@ -870,6 +1004,7 @@ export class AsanaClient extends BaseTrackerClient {
   private mapUser(user: AsanaUser): TrackerUser {
     return {
       id: user.gid,
+      externalId: user.gid,
       name: user.name,
       email: user.email,
       avatarUrl: user.photo?.image_128x128,
@@ -905,7 +1040,7 @@ export class AsanaClient extends BaseTrackerClient {
   private inferStatusCategory(
     name: string,
     completed: boolean
-  ): 'todo' | 'in_progress' | 'done' | 'canceled' {
+  ): 'backlog' | 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled' {
     if (completed) return 'done';
 
     const lowerName = name.toLowerCase();
@@ -920,26 +1055,34 @@ export class AsanaClient extends BaseTrackerClient {
       return 'done';
     }
 
+    // Review patterns
+    if (lowerName.includes('review') || lowerName.includes('qa')) {
+      return 'review';
+    }
+
     // In progress patterns
     if (
       lowerName.includes('progress') ||
       lowerName.includes('doing') ||
       lowerName.includes('working') ||
-      lowerName.includes('active') ||
-      lowerName.includes('in review') ||
-      lowerName.includes('review')
+      lowerName.includes('active')
     ) {
       return 'in_progress';
     }
 
-    // Canceled patterns
+    // Cancelled patterns
     if (
       lowerName.includes('cancel') ||
       lowerName.includes('archived') ||
       lowerName.includes('blocked') ||
       lowerName.includes('won\'t do')
     ) {
-      return 'canceled';
+      return 'cancelled';
+    }
+
+    // Backlog patterns
+    if (lowerName.includes('backlog') || lowerName.includes('icebox')) {
+      return 'backlog';
     }
 
     // Default to todo
@@ -949,9 +1092,9 @@ export class AsanaClient extends BaseTrackerClient {
   /**
    * Extract priority from task custom fields or tags.
    * @param task - Asana task
-   * @returns Priority object
+   * @returns Priority object with level (0-4)
    */
-  private extractPriority(task: AsanaTask): { id: string; name: string; value: number } {
+  private extractPriority(task: AsanaTask): { name: string; level: number; color?: string } | undefined {
     // Check custom fields for priority
     const priorityField = task.custom_fields?.find(
       (f) =>
@@ -960,11 +1103,10 @@ export class AsanaClient extends BaseTrackerClient {
     );
 
     if (priorityField && priorityField.enum_value) {
-      const value = this.mapPriorityValue(priorityField.enum_value.name || '');
+      const level = this.mapPriorityLevel(priorityField.enum_value.name || '');
       return {
-        id: priorityField.enum_value.gid,
         name: priorityField.enum_value.name || 'Unknown',
-        value,
+        level,
       };
     }
 
@@ -980,26 +1122,22 @@ export class AsanaClient extends BaseTrackerClient {
     if (priorityTag) {
       const name = priorityTag.name || '';
       return {
-        id: priorityTag.gid,
         name,
-        value: this.mapPriorityValue(name),
+        level: this.mapPriorityLevel(name),
+        color: (priorityTag as { color?: string }).color,
       };
     }
 
-    // Default to no priority
-    return {
-      id: 'none',
-      name: 'None',
-      value: 0,
-    };
+    // No priority found
+    return undefined;
   }
 
   /**
-   * Map priority name to numeric value.
+   * Map priority name to numeric level (0-4).
    * @param name - Priority name
-   * @returns Numeric priority value
+   * @returns Numeric priority level
    */
-  private mapPriorityValue(name: string): number {
+  private mapPriorityLevel(name: string): 0 | 1 | 2 | 3 | 4 {
     const lowerName = name.toLowerCase();
     if (lowerName.includes('urgent') || lowerName.includes('critical')) return 4;
     if (lowerName.includes('high')) return 3;
