@@ -412,6 +412,7 @@ export interface SlackSlashCommand {
 /**
  * Block Kit builder types
  */
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace BlockKit {
   export interface SectionBlock extends SlackBlock {
     type: 'section';
