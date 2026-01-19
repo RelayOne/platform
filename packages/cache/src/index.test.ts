@@ -15,8 +15,6 @@ import {
   cacheKey,
   CacheTags,
   CacheTTL,
-  type CacheConfig,
-  type CacheOptions,
 } from './index';
 
 // Mock ioredis to prevent actual Redis connections
